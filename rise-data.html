@@ -1,4 +1,5 @@
 <link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-ajax/iron-ajax.html">
 <link rel="import" href="../rise-logger/rise-logger.html">
 
 <!--
@@ -8,6 +9,15 @@
 <dom-module id="rise-data">
   <template>
     <rise-logger id="logger"></rise-logger>
+
+    <iron-ajax id="ping"
+               url="//localhost:9494"
+               handle-as="json"
+               on-response="_handlePingResponse"
+               on-error="_handlePingError"
+               verbose="true">
+    </iron-ajax>
+
     <content></content>
   </template>
 </dom-module>
@@ -24,6 +34,8 @@
     "use strict";
 
     var BQ_TABLE_NAME = "component_data_events";
+
+    var BASE_CACHE_URL = "//localhost:9494";
 
     Polymer({
       is: "rise-data",
@@ -43,8 +55,37 @@
 
       },
 
+      _isCacheRunning: false,
+
+      _pingReceived: false,
+
       _isValidUsage: function(usage) {
         return usage === "standalone" || usage === "widget";
+      },
+
+      /**
+       * Fires when a response is received from the ping request.
+       */
+      _handlePingResponse: function(e, resp) {
+        this._isCacheRunning = resp.response && resp.response !== "";
+        this._pingReceived = true;
+      },
+
+      /**
+       * Fires when an error is received from the ping request.
+       */
+      _handlePingError: function(e, resp) {
+        this._isCacheRunning = false;
+        this._pingReceived = true;
+
+        console.log("[rise-data] Ping Error");
+      },
+
+      /**
+       * An instance of the element was inserted into the DOM.
+       */
+      attached: function() {
+        this.$.ping.generateRequest();
       },
 
       /**
