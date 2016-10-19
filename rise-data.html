@@ -1,0 +1,71 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../rise-logger/rise-logger.html">
+
+<!--
+`rise-data` is a web component for storing data.
+
+-->
+<dom-module id="rise-data">
+  <template>
+    <rise-logger id="logger"></rise-logger>
+    <content></content>
+  </template>
+</dom-module>
+
+<!-- build:version -->
+<script>var dataVersion = "1.0.0";</script>
+<!-- endbuild -->
+
+<script>
+  (function() {
+    /* global Polymer */
+    /* jshint newcap: false */
+
+    "use strict";
+
+    var BQ_TABLE_NAME = "component_data_events";
+
+    Polymer({
+      is: "rise-data",
+
+      hostAttributes: {
+        hidden: true
+      },
+
+      properties: {
+        /**
+         * The optional usage type for Rise Vision logging purposes. Options are "standalone" or "widget"
+         */
+        usage: {
+          type: String,
+          value: ""
+        }
+
+      },
+
+      _isValidUsage: function(usage) {
+        return usage === "standalone" || usage === "widget";
+      },
+
+      /**
+       * Polymer has finished its initialization. This is the entry point.
+       */
+      ready: function() {
+        var params = {
+          event: "ready"
+        };
+
+        // only include usage_type if it's a valid usage value
+        if (this._isValidUsage(this.usage)) {
+          params.usage_type = this.usage;
+        }
+
+        params.version = dataVersion;
+
+        // log usage
+        this.$.logger.log(BQ_TABLE_NAME, params);
+      }
+
+    });
+  })();
+</script>

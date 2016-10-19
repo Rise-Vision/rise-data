@@ -1,0 +1,30 @@
+{
+  "name": "rise-data",
+  "version": "1.0.0",
+  "authors": [
+    "Rise Vision"
+  ],
+  "description": "Web component for storing data",
+  "main": "rise-data.html",
+  "keywords": [
+    "polymer",
+    "web-components",
+    "rise-cache"
+  ],
+  "license": "GPLv3",
+  "homepage": "https://github.com/Rise-Vision/rise-data",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "test"
+  ],
+  "dependencies": {
+    "iron-ajax": "PolymerElements/iron-ajax#^1.0.0",
+    "polymer": "Polymer/polymer#^1.0.0",
+    "rise-logger": "https://github.com/Rise-Vision/rise-logger.git#1.0.0"
+  },
+  "devDependencies": {
+    "iron-component-page": "PolymerElements/iron-component-page#^1.0.0",
+    "web-component-tester": "*"
+  }
+}
