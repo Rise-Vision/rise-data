@@ -2,6 +2,8 @@
 <link rel="import" href="../iron-ajax/iron-ajax.html">
 <link rel="import" href="../rise-logger/rise-logger.html">
 
+<script src="../moment/moment.js"></script>
+
 <!--
 `rise-data` is a web component for storing data.
 
@@ -28,14 +30,20 @@
 
 <script>
   (function() {
-    /* global Polymer */
+    /* global Polymer, moment */
     /* jshint newcap: false */
 
     "use strict";
 
     var BQ_TABLE_NAME = "component_data_events";
 
-    var BASE_CACHE_URL = "//localhost:9494";
+    function supportsLocalStorage() {
+      try {
+        return "localStorage" in window && window.localStorage !== null;
+      } catch (e) {
+        return false;
+      }
+    }
 
     Polymer({
       is: "rise-data",
@@ -74,11 +82,9 @@
       /**
        * Fires when an error is received from the ping request.
        */
-      _handlePingError: function(e, resp) {
+      _handlePingError: function() {
         this._isCacheRunning = false;
         this._pingReceived = true;
-
-        console.log("[rise-data] Ping Error");
       },
 
       /**
@@ -105,6 +111,83 @@
 
         // log usage
         this.$.logger.log(BQ_TABLE_NAME, params);
+      },
+
+      /**
+       * Cache the data
+       *
+       * @param {String} key The key to identify the item of data
+       * @param {Object} data The data to cache
+       * @param {Boolean} ts Optionally include a timestamp to cache
+       */
+      saveItem: function(key, data, ts) {
+        var cacheObj = {};
+
+        if (this._pingReceived && key && data) {
+          if (!this._isCacheRunning) {
+            if (supportsLocalStorage()) {
+              cacheObj.data = data;
+
+              if (ts) {
+                cacheObj.timestamp = moment().format();
+              }
+
+              try {
+                localStorage.setItem(key, JSON.stringify(cacheObj));
+              } catch(e) {
+                console.warn(e.message);
+              }
+
+            }
+          }
+
+          // TODO: handle Rise Cache running
+        }
+      },
+
+      /**
+       * Retrieve the data
+       *
+       * @param {String} key The key to identify the item of data
+       * @return {Object} The cached data.
+       */
+      getItem: function(key) {
+        var data = null;
+
+        if (this._pingReceived && key) {
+          if (!this._isCacheRunning) {
+            if (supportsLocalStorage()) {
+              // retrieve cached data and parse back
+              data = JSON.parse(localStorage.getItem(key));
+            }
+          }
+
+          // TODO: handle Rise Cache running
+        }
+
+        return data;
+
+      },
+
+      /**
+       * Delete the data
+       *
+       * @param {String} key The key to identify the item of data
+       */
+      deleteItem: function(key) {
+        if (this._pingReceived && key) {
+          if (!this._isCacheRunning) {
+            if (supportsLocalStorage()) {
+              try {
+                localStorage.removeItem(key);
+              } catch (ex) {
+                console.warn(ex.message);
+              }
+            }
+          }
+
+          // TODO: handle Rise Cache running
+        }
       }
 
     });

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <title>rise-data</title>
+
+  <script src="../../bower_components/webcomponentsjs/webcomponents.min.js"></script>
+  <script src="../../bower_components/web-component-tester/browser.js"></script>
+
+  <link rel="import" href="../../rise-data.html">
+</head>
+<body>
+
+<rise-data id="request"></rise-data>
+
+<script src="../data/sheet.js"></script>
+<script src="../../node_modules/widget-tester/mocks/localStorage-mock.js"></script>
+
+<script>
+
+  var dataRequest = document.querySelector("#request");
+
+  // mock logger getting display id and force handler RC not running
+  sinon.stub(dataRequest.$.logger.$.displayId, "generateRequest", function() {
+    dataRequest.$.logger._onDisplayIdError();
+  });
+
+  // mock ping and force handler of RC not running
+  sinon.stub(dataRequest.$.ping, "generateRequest", function() {
+    dataRequest._handlePingError();
+  });
+
+  suite("localStorage", function () {
+
+    suite("saveItem", function () {
+
+      teardown(function () {
+        window.localStorageError = false;
+        localStorage.removeItem(sheetKey);
+      });
+
+      test("should catch error thrown by localStorage.setItem and log a warning in console", function () {
+        var warnSpy = sinon.spy(console, "warn");
+
+        // force an error from localStorage.setItem()
+        window.localStorageError = true;
+
+        dataRequest.saveItem(sheetKey, {results: sheetData.values});
+
+        assert(warnSpy.calledOnce);
+        console.warn.restore();
+      });
+
+      test("should ensure data passed in localStorage.setItem() is stringified", function () {
+        dataRequest.saveItem(sheetKey, {results: sheetData.values});
+
+        var value = localStorage.getItem(sheetKey);
+
+        assert.isString(value);
+      });
+
+      test("should ensure timestamp is added to cached data", function () {
+        dataRequest.saveItem(sheetKey, {results: sheetData.values}, true);
+
+        var value = localStorage.getItem(sheetKey);
+
+        assert.property(JSON.parse(value), "timestamp");
+        assert.isString(JSON.parse(value).timestamp, "timestamp");
+      });
+
+    });
+
+    suite("getItem", function () {
+      var value;
+
+      teardown(function () {
+        localStorage.removeItem(sheetKey);
+      });
+
+      test("Should return null when no cached data exists", function () {
+        value = dataRequest.getItem(sheetKey);
+
+        assert.isNull(value);
+      });
+
+      test("Should return null when no key provided", function () {
+        value = dataRequest.getItem();
+
+        assert.isNull(value);
+      });
+
+      test("Should ensure value returned has been parsed as JSON", function () {
+        localStorage.setItem(sheetKey, JSON.stringify({data: {results: sheetData.values}, timestamp: ""}));
+
+        value = dataRequest.getItem(sheetKey);
+
+        assert.isObject(value);
+      });
+    });
+
+    suite("deleteItem", function () {
+      setup(function () {
+        localStorage.setItem(sheetKey, JSON.stringify({data: {results: sheetData.values}, timestamp: ""}));
+      });
+
+      teardown(function () {
+        localStorage.removeItem(sheetKey);
+      });
+
+      test("Should not delete data when no key provided", function () {
+        dataRequest.deleteItem();
+
+        assert.deepEqual(JSON.parse(localStorage.getItem(sheetKey)), {data: {results: sheetData.values}, timestamp: ""});
+      });
+
+      test("Should ensure data is removed", function () {
+        dataRequest.deleteItem(sheetKey);
+
+        assert.isNull(localStorage.getItem(sheetKey));
+      });
+    });
+
+  });
+</script>
+</body>
+</html>
