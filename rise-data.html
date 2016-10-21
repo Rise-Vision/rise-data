@@ -3,6 +3,7 @@
 <link rel="import" href="../rise-logger/rise-logger.html">
 
 <script src="../moment/moment.js"></script>
+<script src="../underscore/underscore.js"></script>
 
 <!--
 `rise-data` is a web component for storing data.
@@ -20,6 +21,13 @@
                verbose="true">
     </iron-ajax>
 
+    <iron-ajax id="cache"
+               content-type="application/json"
+               handle-as="json"
+               on-response="_handleCacheResponse"
+               on-error="_handleCacheError">
+    </iron-ajax>
+
     <content></content>
   </template>
 </dom-module>
@@ -30,12 +38,14 @@
 
 <script>
   (function() {
-    /* global Polymer, moment */
+    /* global Polymer, moment, _ */
     /* jshint newcap: false */
 
     "use strict";
 
     var BQ_TABLE_NAME = "component_data_events";
+
+    var BASE_CACHE_URL = "//localhost:9494";
 
     function supportsLocalStorage() {
       try {
@@ -53,6 +63,11 @@
       },
 
       properties: {
+        endpoint: {
+          type: String,
+          value: ""
+        },
+
         /**
          * The optional usage type for Rise Vision logging purposes. Options are "standalone" or "widget"
          */
@@ -67,24 +82,127 @@
 
       _pingReceived: false,
 
+      _keys: [],
+
+      _currentKey: null,
+
+      _callback: null,
+
       _isValidUsage: function(usage) {
         return usage === "standalone" || usage === "widget";
       },
 
-      /**
-       * Fires when a response is received from the ping request.
-       */
+      _getCacheUrl: function(key) {
+        var url = BASE_CACHE_URL + "/" + this.endpoint;
+
+        if (this.$.cache.method === "PUT" || this.$.cache.method === "DELETE" || this.$.cache.method === "GET") {
+          url += "/" + key;
+        }
+
+        return url;
+      },
+
+      _getCacheBody: function(key, data) {
+        var body = {};
+
+        if (this.$.cache.method === "POST" || this.$.cache.method === "PUT") {
+          body.key = key;
+          body.value = data;
+        }
+
+        return body;
+      },
+
+      _handleCacheError: function(e, resp) {
+        var params = {
+          event: "error"
+        };
+
+        if (this.$.cache.method === "GET" && this._callback && typeof this._callback === "function") {
+          this._callback(null);
+          this._callback = null;
+
+          // don't continue with logging if 404
+          if (resp.request.status === 404) {
+            return;
+          }
+        }
+
+        if (resp.error) {
+          params.event_details = "[" + this.endpoint + "] " + resp.error.message;
+        }
+
+        // only include usage_type if it's a valid usage value
+        if (this._isValidUsage(this.usage)) {
+          params.usage_type = this.usage;
+        }
+
+        params.version = dataVersion;
+
+        // log usage
+        this.$.logger.log(BQ_TABLE_NAME, params);
+      },
+
+      _handleCacheResponse: function(e, resp) {
+        if (this._callback && typeof this._callback === "function") {
+          if (resp && resp.response) {
+            this._callback(resp.response);
+          }
+          else {
+            this._callback(null);
+          }
+        }
+
+        if (this.$.cache.method === "POST") {
+          this._keys.push(this._currentKey);
+        }
+        else if (this.$.cache.method === "DELETE") {
+          this._keys = _.without(this._keys, this._currentKey);
+        }
+
+        // reset callback value
+        this._callback = null;
+
+      },
+
       _handlePingResponse: function(e, resp) {
         this._isCacheRunning = resp.response && resp.response !== "";
         this._pingReceived = true;
       },
 
-      /**
-       * Fires when an error is received from the ping request.
-       */
       _handlePingError: function() {
         this._isCacheRunning = false;
         this._pingReceived = true;
+      },
+
+      _get: function(key, cb) {
+        this._currentKey = key;
+
+        this.$.cache.method = "GET";
+        this.$.cache.url = this._getCacheUrl(key);
+        this.$.cache.body = this._getCacheBody(key);
+
+        this._callback = cb;
+        this.$.cache.generateRequest();
+      },
+
+      _delete: function(key) {
+        this._currentKey = key;
+
+        this.$.cache.method = "DELETE";
+        this.$.cache.url = this._getCacheUrl(key);
+        this.$.cache.body = this._getCacheBody(key);
+        this.$.cache.generateRequest();
+      },
+
+      _save: function(key, data) {
+        this._currentKey = key;
+
+        this.$.cache.method = (_.indexOf(this._keys, key) !== -1) ? "PUT" : "POST";
+        this.$.cache.url = this._getCacheUrl(key);
+        this.$.cache.body = this._getCacheBody(key, data);
+
+        this.$.cache.generateRequest();
       },
 
       /**
@@ -135,13 +253,16 @@
               try {
                 localStorage.setItem(key, JSON.stringify(cacheObj));
               } catch(e) {
-                console.warn(e.message);
+                // TODO: use logger to log failure?
               }
 
             }
           }
-
-          // TODO: handle Rise Cache running
+          else {
+            if (this.endpoint) {
+              this._save(key, data);
+            }
+          }
         }
       },
 
@@ -149,23 +270,27 @@
        * Retrieve the data
        *
        * @param {String} key The key to identify the item of data
-       * @return {Object} The cached data.
+       * @param {Function} cb The callback to execute with provided data
        */
-      getItem: function(key) {
+      getItem: function(key, cb) {
         var data = null;
 
-        if (this._pingReceived && key) {
+        if (this._pingReceived && key && cb && typeof cb ==="function") {
           if (!this._isCacheRunning) {
             if (supportsLocalStorage()) {
               // retrieve cached data and parse back
               data = JSON.parse(localStorage.getItem(key));
+
+              cb(data);
+            }
+          }
+          else {
+            if (this.endpoint) {
+              this._get(key, cb);
             }
           }
 
-          // TODO: handle Rise Cache running
         }
-
-        return data;
 
       },
 
@@ -181,12 +306,15 @@
               try {
                 localStorage.removeItem(key);
               } catch (ex) {
-                console.warn(ex.message);
+                // TODO: use logger to log failure?
               }
             }
           }
-
-          // TODO: handle Rise Cache running
+          else {
+            if (this.endpoint) {
+              this._delete(key);
+            }
+          }
         }
       }
 
