@@ -48,15 +48,6 @@
         assert.isString(value);
       });
 
-      test("should ensure timestamp is added to cached data", function () {
-        dataRequest.saveItem(sheetKey, {results: sheetData.values}, true);
-
-        var value = localStorage.getItem(sheetKey);
-
-        assert.property(JSON.parse(value), "timestamp");
-        assert.isString(JSON.parse(value).timestamp, "timestamp");
-      });
-
     });
 
     suite("getItem", function () {

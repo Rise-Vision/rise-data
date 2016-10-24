@@ -2,7 +2,6 @@
 <link rel="import" href="../iron-ajax/iron-ajax.html">
 <link rel="import" href="../rise-logger/rise-logger.html">
 
-<script src="../moment/moment.js"></script>
 <script src="../underscore/underscore.js"></script>
 
 <!--
@@ -38,7 +37,7 @@
 
 <script>
   (function() {
-    /* global Polymer, moment, _ */
+    /* global Polymer, _ */
     /* jshint newcap: false */
 
     "use strict";
@@ -236,26 +235,16 @@
        *
        * @param {String} key The key to identify the item of data
        * @param {Object} data The data to cache
-       * @param {Boolean} ts Optionally include a timestamp to cache
        */
-      saveItem: function(key, data, ts) {
-        var cacheObj = {};
-
+      saveItem: function(key, data) {
         if (this._pingReceived && key && data) {
           if (!this._isCacheRunning) {
             if (supportsLocalStorage()) {
-              cacheObj.data = data;
-
-              if (ts) {
-                cacheObj.timestamp = moment().format();
-              }
-
               try {
-                localStorage.setItem(key, JSON.stringify(cacheObj));
+                localStorage.setItem(key, JSON.stringify(data));
               } catch(e) {
                 // TODO: use logger to log failure?
               }
-
             }
           }
           else {
