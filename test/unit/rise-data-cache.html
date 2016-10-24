@@ -180,7 +180,14 @@
 
     suite("_handleCacheResponse", function() {
 
-      var resp = {response: {results: sheetData.values}};
+      var resp = {
+        response: {
+          key: sheetKey,
+          value: {
+            results: sheetData.values
+          }
+        }
+      };
 
       teardown(function () {
         dataRequest._callback = null;
@@ -189,7 +196,7 @@
         dataRequest._keys = [];
       });
 
-      test("should execute callback", function() {
+      test("should execute callback with correct data", function() {
         var spy;
 
         dataRequest._callback = function(){};
@@ -199,6 +206,7 @@
         dataRequest._handleCacheResponse(null, resp);
 
         assert.isTrue(spy.calledOnce);
+        assert.isTrue(spy.calledWith(resp.response.value));
       });
 
       test("should add key to list when request was POST", function() {

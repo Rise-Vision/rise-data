@@ -145,7 +145,7 @@
       _handleCacheResponse: function(e, resp) {
         if (this._callback && typeof this._callback === "function") {
           if (resp && resp.response) {
-            this._callback(resp.response);
+            this._callback(resp.response.value);
           }
           else {
             this._callback(null);
