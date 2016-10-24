@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <title>rise-data</title>
+
+  <script src="../../bower_components/webcomponentsjs/webcomponents.min.js"></script>
+  <script src="../../bower_components/web-component-tester/browser.js"></script>
+
+  <link rel="import" href="../../rise-data.html">
+</head>
+<body>
+
+<rise-data id="request"></rise-data>
+
+<script src="../data/sheet.js"></script>
+<script src="../../node_modules/widget-tester/mocks/localStorage-mock.js"></script>
+
+<script>
+
+  var dataRequest = document.querySelector("#request");
+
+  // mock logger getting display id and force RC running
+  sinon.stub(dataRequest.$.logger.$.displayId, "generateRequest", function() {
+    dataRequest.$.logger._onDisplayIdResponse(null, {response: {displayId: "abc123"}});
+  });
+
+  // mock ping and force RC running
+  sinon.stub(dataRequest.$.ping, "generateRequest", function() {
+    dataRequest._handlePingResponse(null, {response:{ name : "rise-cache-v2", version: "0.0.0" }});
+  });
+
+  suite("rise cache", function () {
+
+    suite("_getCacheUrl", function() {
+
+      suiteSetup(function() {
+        dataRequest.endpoint = "spreadsheets"
+      });
+
+      suiteTeardown(function() {
+        dataRequest.endpoint = "";
+      });
+
+      teardown(function() {
+        dataRequest.$.cache.method = "";
+      });
+
+      test("should return correct URL when request method is POST", function() {
+        dataRequest.$.cache.method = "POST";
+        assert.equal(dataRequest._getCacheUrl(sheetKey), "//localhost:9494/spreadsheets");
+      });
+
+      test("should return correct URL when request method is GET", function() {
+        dataRequest.$.cache.method = "GET";
+        assert.equal(dataRequest._getCacheUrl(sheetKey), "//localhost:9494/spreadsheets/" + sheetKey);
+      });
+
+      test("should return correct URL when request method is PUT", function() {
+        dataRequest.$.cache.method = "PUT";
+        assert.equal(dataRequest._getCacheUrl(sheetKey), "//localhost:9494/spreadsheets/" + sheetKey);
+      });
+
+      test("should return correct URL when request method is DELETE", function() {
+        dataRequest.$.cache.method = "DELETE";
+        assert.equal(dataRequest._getCacheUrl(sheetKey), "//localhost:9494/spreadsheets/" + sheetKey);
+      });
+
+    });
+
+    suite("_getCacheBody", function() {
+
+      teardown(function() {
+        dataRequest.$.cache.method = "";
+      });
+
+      test("should return empty object when request method is GET", function() {
+        dataRequest.$.cache.method = "GET";
+        assert.deepEqual(dataRequest._getCacheBody(sheetKey, sheetData.values), {});
+      });
+
+      test("should return empty object when request method is DELETE", function() {
+        dataRequest.$.cache.method = "DELETE";
+        assert.deepEqual(dataRequest._getCacheBody(sheetKey, sheetData.values), {});
+      });
+
+      test("should return body object value when request is a POST", function() {
+        dataRequest.$.cache.method = "POST";
+
+        assert.deepEqual(dataRequest._getCacheBody(sheetKey, sheetData.values), {
+          key: sheetKey,
+          value: sheetData.values
+        });
+      });
+
+      test("should return body object value when request is a PUT", function() {
+        dataRequest.$.cache.method = "PUT";
+
+        assert.deepEqual(dataRequest._getCacheBody(sheetKey, sheetData.values), {
+          key: sheetKey,
+          value: sheetData.values
+        });
+      });
+
+    });
+
+    suite("_handleCacheError", function() {
+
+      var resp = {
+        request: {
+          status: 404
+        },
+        error: {
+          message: "The request failed with status: 404"
+        }
+      },
+        logStub;
+
+      setup(function() {
+        dataRequest.endpoint = "spreadsheets";
+        logStub = sinon.stub(dataRequest.$.logger, "log");
+      });
+
+      teardown(function () {
+        dataRequest._callback = null;
+        dataRequest.$.cache.method = "";
+        dataRequest._currentKey = "";
+        dataRequest._keys = [];
+        dataRequest.endpoint = "";
+        logStub.restore();
+      });
+
+      test("should execute callback when request method was GET", function() {
+        var spy;
+
+        dataRequest._callback = function(){};
+        dataRequest.$.cache.method = "GET";
+
+        spy = sinon.spy(dataRequest, "_callback");
+
+        dataRequest._handleCacheError(null, resp);
+
+        assert.isTrue(spy.calledOnce);
+      });
+
+      test("should reset callback value when request method was GET", function() {
+        dataRequest._callback = function(){};
+        dataRequest.$.cache.method = "GET";
+        dataRequest._handleCacheError(null, resp);
+
+        assert.isNull(dataRequest._callback);
+      });
+
+      test("should not log if request method was GET and error status code was 404", function () {
+        dataRequest._callback = function(){};
+        dataRequest.$.cache.method = "GET";
+        dataRequest._handleCacheError(null, resp);
+
+        assert.equal(logStub.callCount, 0);
+      });
+
+      test("should log error details", function () {
+        var resp = {
+          request: {
+            status: 500
+          },
+          error: {
+            message: "The request failed with status: 500"
+          }
+        };
+
+        dataRequest._handleCacheError(null, resp);
+
+        assert.equal(logStub.args[0][0], "component_data_events");
+        assert.include(JSON.stringify(logStub.args[0][1]),"{\"event\":\"error\",\"event_details\":\"[spreadsheets] The request failed with status: 500\",\"version\":");
+      });
+
+    });
+
+    suite("_handleCacheResponse", function() {
+
+      var resp = {response: {results: sheetData.values}};
+
+      teardown(function () {
+        dataRequest._callback = null;
+        dataRequest.$.cache.method = "";
+        dataRequest._currentKey = "";
+        dataRequest._keys = [];
+      });
+
+      test("should execute callback", function() {
+        var spy;
+
+        dataRequest._callback = function(){};
+
+        spy = sinon.spy(dataRequest, "_callback");
+
+        dataRequest._handleCacheResponse(null, resp);
+
+        assert.isTrue(spy.calledOnce);
+      });
+
+      test("should add key to list when request was POST", function() {
+        dataRequest.$.cache.method = "POST";
+        dataRequest._currentKey = sheetKey;
+        dataRequest._handleCacheResponse(null, resp);
+
+        assert.deepEqual(dataRequest._keys, [sheetKey]);
+      });
+
+      test("should delete key from list when request was DELETE", function() {
+        dataRequest.$.cache.method = "DELETE";
+        dataRequest._currentKey = sheetKey;
+        dataRequest._keys = [sheetKey];
+        dataRequest._handleCacheResponse(null, resp);
+
+        assert.deepEqual(dataRequest._keys, []);
+      });
+
+      test("should reset callback value", function() {
+        dataRequest._callback = function(){};
+        dataRequest._handleCacheResponse(null, resp);
+
+        assert.isNull(dataRequest._callback);
+      });
+
+    });
+
+    suite("_get", function () {
+      var requestStub;
+
+      setup(function () {
+        requestStub = sinon.stub(dataRequest.$.cache, "generateRequest");
+      });
+
+      teardown(function () {
+        requestStub.restore();
+        dataRequest._keys = [];
+        dataRequest._currentKey = null;
+        dataRequest._callback = null;
+        dataRequest.endpoint = "";
+      });
+
+      test("should set current key", function() {
+        dataRequest._get(sheetKey, function(){});
+
+        assert.equal(dataRequest._currentKey, sheetKey);
+      });
+
+      test("should set callback", function() {
+        dataRequest._get(sheetKey, function(){});
+
+        assert.isFunction(dataRequest._callback);
+      });
+
+      test("should set request method to 'GET'", function () {
+        dataRequest._get(sheetKey, function(){});
+
+        assert.equal(dataRequest.$.cache.method, "GET");
+      });
+
+      test("should generate request to Rise Cache", function() {
+        dataRequest.endpoint = "spreadsheets";
+        dataRequest._get(sheetKey, function(){});
+
+        assert.isTrue(requestStub.calledOnce);
+      })
+    });
+
+    suite("_delete", function () {
+      var requestStub;
+
+      setup(function () {
+        requestStub = sinon.stub(dataRequest.$.cache, "generateRequest");
+      });
+
+      teardown(function () {
+        requestStub.restore();
+        dataRequest._keys = [];
+        dataRequest._currentKey = null;
+        dataRequest.endpoint = "";
+      });
+
+      test("should set current key", function() {
+        dataRequest._delete(sheetKey);
+
+        assert.equal(dataRequest._currentKey, sheetKey);
+      });
+
+      test("should set request method to 'DELETE'", function () {
+        dataRequest._delete(sheetKey);
+
+        assert.equal(dataRequest.$.cache.method, "DELETE");
+      });
+
+      test("should generate request to Rise Cache", function() {
+        dataRequest.endpoint = "spreadsheets";
+        dataRequest._delete(sheetKey);
+
+        assert.isTrue(requestStub.calledOnce);
+      })
+    });
+
+    suite("_save", function () {
+      var requestStub;
+
+      setup(function () {
+        requestStub = sinon.stub(dataRequest.$.cache, "generateRequest");
+      });
+
+      teardown(function () {
+        requestStub.restore();
+        dataRequest._keys = [];
+        dataRequest._currentKey = null;
+        dataRequest.endpoint = "";
+      });
+
+      test("should set current key", function() {
+        dataRequest._save(sheetKey, {results: sheetData.values});
+
+        assert.equal(dataRequest._currentKey, sheetKey);
+      });
+
+      test("should set request method to 'POST'", function () {
+        dataRequest._save(sheetKey, {results: sheetData.values});
+
+        assert.equal(dataRequest.$.cache.method, "POST");
+      });
+
+      test("should set request method to 'PUT'", function () {
+        dataRequest._keys = [sheetKey];
+        dataRequest._save(sheetKey, {results: sheetData.values});
+
+        assert.equal(dataRequest.$.cache.method, "PUT");
+      });
+
+      test("should generate request to Rise Cache", function() {
+        dataRequest.endpoint = "spreadsheets";
+        dataRequest._save(sheetKey, {results: sheetData.values});
+
+        assert.isTrue(requestStub.calledOnce);
+      })
+    });
+
+    suite("saveItem", function () {
+      var saveStub;
+
+      setup(function () {
+        saveStub = sinon.stub(dataRequest, "_save");
+      });
+
+      teardown(function () {
+        saveStub.restore();
+      });
+
+      suiteTeardown(function () {
+        dataRequest.endpoint = "";
+      });
+
+      test("should not request to save without key param", function () {
+        dataRequest.saveItem(false, {results: sheetData.values});
+
+        assert.equal(saveStub.callCount, 0);
+      });
+
+      test("should not request to save without data param", function () {
+        dataRequest.saveItem(sheetKey);
+
+        assert.equal(saveStub.callCount, 0);
+      });
+
+      test("should not request to save without endpoint attribute being set", function () {
+        dataRequest.saveItem(sheetKey, {results: sheetData.values});
+
+        assert.equal(saveStub.callCount, 0);
+      });
+
+      test("should request to save", function () {
+        dataRequest.endpoint = "spreadsheets";
+        dataRequest.saveItem(sheetKey, {results: sheetData.values});
+
+        assert.isTrue(saveStub.calledOnce);
+      });
+
+    });
+
+    suite("getItem", function () {
+      var getStub;
+
+      setup(function () {
+        getStub = sinon.stub(dataRequest, "_get");
+      });
+
+      teardown(function () {
+        getStub.restore();
+      });
+
+      suiteTeardown(function () {
+        dataRequest.endpoint = "";
+      });
+
+      test("should not request to get without key param", function () {
+        dataRequest.getItem(false, function(){});
+
+        assert.equal(getStub.callCount, 0);
+      });
+
+      test("should not request to get data without callback function param", function () {
+        dataRequest.getItem(sheetKey);
+
+        assert.equal(getStub.callCount, 0);
+      });
+
+      test("should not request to get data if callback param not a function", function () {
+        dataRequest.getItem(sheetKey, "callback");
+
+        assert.equal(getStub.callCount, 0);
+      });
+
+      test("should not request to get data without endpoint attribute being set", function () {
+        dataRequest.getItem(sheetKey, {results: sheetData.values});
+
+        assert.equal(getStub.callCount, 0);
+      });
+
+      test("should request to get data", function () {
+        dataRequest.endpoint = "spreadsheets";
+        dataRequest.getItem(sheetKey, function(){});
+
+        assert.isTrue(getStub.calledOnce);
+      });
+    });
+
+    suite("deleteItem", function () {
+      var deleteStub;
+
+      setup(function () {
+        deleteStub = sinon.stub(dataRequest, "_delete");
+      });
+
+      teardown(function () {
+        deleteStub.restore();
+      });
+
+      suiteTeardown(function () {
+        dataRequest.endpoint = "";
+      });
+
+      test("should not request to delete without key param", function () {
+        dataRequest.deleteItem();
+
+        assert.equal(deleteStub.callCount, 0);
+      });
+
+      test("should not request to delete data without endpoint attribute being set", function () {
+        dataRequest.deleteItem(sheetKey);
+
+        assert.equal(deleteStub.callCount, 0);
+      });
+
+      test("should request to delete data", function () {
+        dataRequest.endpoint = "spreadsheets";
+        dataRequest.deleteItem(sheetKey);
+
+        assert.isTrue(deleteStub.calledOnce);
+      });
+    });
+
+  });
+</script>
+</body>
+</html>

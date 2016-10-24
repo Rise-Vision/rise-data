@@ -40,18 +40,6 @@
         localStorage.removeItem(sheetKey);
       });
 
-      test("should catch error thrown by localStorage.setItem and log a warning in console", function () {
-        var warnSpy = sinon.spy(console, "warn");
-
-        // force an error from localStorage.setItem()
-        window.localStorageError = true;
-
-        dataRequest.saveItem(sheetKey, {results: sheetData.values});
-
-        assert(warnSpy.calledOnce);
-        console.warn.restore();
-      });
-
       test("should ensure data passed in localStorage.setItem() is stringified", function () {
         dataRequest.saveItem(sheetKey, {results: sheetData.values});
 
@@ -78,24 +66,30 @@
         localStorage.removeItem(sheetKey);
       });
 
-      test("Should return null when no cached data exists", function () {
-        value = dataRequest.getItem(sheetKey);
+      test("should not execute callback without key param", function() {
+        var spy = sinon.spy();
 
-        assert.isNull(value);
+        dataRequest.getItem(false, spy);
+
+        assert.equal(spy.callCount, 0);
       });
 
-      test("Should return null when no key provided", function () {
-        value = dataRequest.getItem();
+      test("should execute callback with null value when no data stored", function() {
+        var spy = sinon.spy();
 
-        assert.isNull(value);
+        dataRequest.getItem(sheetKey, spy);
+
+        assert.isTrue(spy.calledWith(null));
       });
 
-      test("Should ensure value returned has been parsed as JSON", function () {
+      test("should execute callback providing data", function() {
+        var spy = sinon.spy();
+
         localStorage.setItem(sheetKey, JSON.stringify({data: {results: sheetData.values}, timestamp: ""}));
 
-        value = dataRequest.getItem(sheetKey);
+        dataRequest.getItem(sheetKey, spy);
 
-        assert.isObject(value);
+        assert.isTrue(spy.calledWith({data: {results: sheetData.values}, timestamp: ""}));
       });
     });
 

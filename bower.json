@@ -22,7 +22,8 @@
     "iron-ajax": "PolymerElements/iron-ajax#^1.0.0",
     "polymer": "Polymer/polymer#^1.0.0",
     "moment": "^2.14.0",
-    "rise-logger": "https://github.com/Rise-Vision/rise-logger.git#1.0.0"
+    "rise-logger": "https://github.com/Rise-Vision/rise-logger.git#1.0.0",
+    "underscore": "~1.8.2"
   },
   "devDependencies": {
     "iron-component-page": "PolymerElements/iron-component-page#^1.0.0",
