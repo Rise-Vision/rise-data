@@ -46,6 +46,42 @@
 
     });
 
+    suite( "_handlePingResponse", function() {
+
+      test( "should fire 'rise-data-ping-received'", function(done) {
+        var responseHandler = function (response) {
+          assert.isTrue(response.detail);
+
+          dataRequest.removeEventListener("rise-data-ping-received", responseHandler);
+
+          done();
+        };
+
+        dataRequest.addEventListener("rise-data-ping-received", responseHandler);
+
+        dataRequest._handlePingResponse( null, { response: { name: "rise-cache-v2", version: "0.0.0" } } );
+      } );
+
+    } );
+
+    suite( "_handlePingError", function() {
+
+      test( "should fire 'rise-data-ping-received'", function(done) {
+        var responseHandler = function (response) {
+          assert.isFalse(response.detail);
+
+          dataRequest.removeEventListener("rise-data-ping-received", responseHandler);
+
+          done();
+        };
+
+        dataRequest.addEventListener("rise-data-ping-received", responseHandler);
+
+        dataRequest._handlePingError();
+      } );
+
+    } );
+
     suite("ready", function() {
       var logStub;
 

@@ -32,7 +32,7 @@
 </dom-module>
 
 <!-- build:version -->
-<script>var dataVersion = "1.0.0";</script>
+<script>var dataVersion = "1.1.0";</script>
 <!-- endbuild -->
 
 <script>
@@ -86,6 +86,12 @@
       _currentKey: null,
 
       _callback: null,
+
+      /**
+       * Fired when a ping to Rise Cache has been received.
+       *
+       * @event rise-data-ping-received
+       */
 
       _isValidUsage: function(usage) {
         return usage === "standalone" || usage === "widget";
@@ -167,11 +173,15 @@
       _handlePingResponse: function(e, resp) {
         this._isCacheRunning = resp.response && resp.response !== "";
         this._pingReceived = true;
+
+        this.fire( "rise-data-ping-received", this._isCacheRunning );
       },
 
       _handlePingError: function() {
         this._isCacheRunning = false;
         this._pingReceived = true;
+
+        this.fire( "rise-data-ping-received", this._isCacheRunning );
       },
 
       _get: function(key, cb) {
