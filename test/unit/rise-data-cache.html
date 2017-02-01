@@ -50,22 +50,22 @@
 
       test( "should return correct URL when request method is POST", function() {
         dataRequest.$.cache.method = "POST";
-        assert.equal( dataRequest._getCacheUrl( sheetKey ), "//localhost:9494/spreadsheets" );
+        assert.equal( dataRequest._getCacheUrl( sheetKey ), "http://localhost:9494/spreadsheets" );
       } );
 
       test( "should return correct URL when request method is GET", function() {
         dataRequest.$.cache.method = "GET";
-        assert.equal( dataRequest._getCacheUrl( sheetKey ), "//localhost:9494/spreadsheets/" + sheetKey );
+        assert.equal( dataRequest._getCacheUrl( sheetKey ), "http://localhost:9494/spreadsheets/" + sheetKey );
       } );
 
       test( "should return correct URL when request method is PUT", function() {
         dataRequest.$.cache.method = "PUT";
-        assert.equal( dataRequest._getCacheUrl( sheetKey ), "//localhost:9494/spreadsheets/" + sheetKey );
+        assert.equal( dataRequest._getCacheUrl( sheetKey ), "http://localhost:9494/spreadsheets/" + sheetKey );
       } );
 
       test( "should return correct URL when request method is DELETE", function() {
         dataRequest.$.cache.method = "DELETE";
-        assert.equal( dataRequest._getCacheUrl( sheetKey ), "//localhost:9494/spreadsheets/" + sheetKey );
+        assert.equal( dataRequest._getCacheUrl( sheetKey ), "http://localhost:9494/spreadsheets/" + sheetKey );
       } );
 
     } );

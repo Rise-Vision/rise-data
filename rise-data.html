@@ -13,7 +13,7 @@
     <rise-logger id="logger"></rise-logger>
 
     <iron-ajax id="ping"
-               url="//localhost:9494"
+               url="http://localhost:9494"
                handle-as="json"
                on-response="_handlePingResponse"
                on-error="_handlePingError"
@@ -42,7 +42,7 @@
     "use strict";
 
     var BQ_TABLE_NAME = "component_data_events",
-      BASE_CACHE_URL = "//localhost:9494";
+      BASE_CACHE_URL = "http://localhost:9494";
 
     function supportsLocalStorage() {
       try {
