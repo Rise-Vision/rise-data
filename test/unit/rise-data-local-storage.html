@@ -18,95 +18,96 @@
 <script src="../../node_modules/widget-tester/mocks/localStorage-mock.js"></script>
 
 <script>
+  /* global sinon, suite, test, assert, setup, teardown, sheetKey, sheetData */
 
-  var dataRequest = document.querySelector("#request");
+  var dataRequest = document.querySelector( "#request" );
 
   // mock logger getting display id and force handler RC not running
-  sinon.stub(dataRequest.$.logger.$.displayId, "generateRequest", function() {
+  sinon.stub( dataRequest.$.logger.$.displayId, "generateRequest", function() {
     dataRequest.$.logger._onDisplayIdError();
-  });
+  } );
 
   // mock ping and force handler of RC not running
-  sinon.stub(dataRequest.$.ping, "generateRequest", function() {
+  sinon.stub( dataRequest.$.ping, "generateRequest", function() {
     dataRequest._handlePingError();
-  });
+  } );
 
-  suite("localStorage", function () {
+  suite( "localStorage", function() {
 
-    suite("saveItem", function () {
+    suite( "saveItem", function() {
 
-      teardown(function () {
+      teardown( function() {
         window.localStorageError = false;
-        localStorage.removeItem(sheetKey);
-      });
+        localStorage.removeItem( sheetKey );
+      } );
 
-      test("should ensure data passed in localStorage.setItem() is stringified", function () {
-        dataRequest.saveItem(sheetKey, {results: sheetData.values});
+      test( "should ensure data passed in localStorage.setItem() is stringified", function() {
+        var value;
 
-        var value = localStorage.getItem(sheetKey);
+        dataRequest.saveItem( sheetKey, { results: sheetData.values } );
 
-        assert.isString(value);
-      });
+        value = localStorage.getItem( sheetKey );
 
-    });
+        assert.isString( value );
+      } );
 
-    suite("getItem", function () {
-      var value;
+    } );
 
-      teardown(function () {
-        localStorage.removeItem(sheetKey);
-      });
+    suite( "getItem", function() {
+      teardown( function() {
+        localStorage.removeItem( sheetKey );
+      } );
 
-      test("should not execute callback without key param", function() {
+      test( "should not execute callback without key param", function() {
         var spy = sinon.spy();
 
-        dataRequest.getItem(false, spy);
+        dataRequest.getItem( false, spy );
 
-        assert.equal(spy.callCount, 0);
-      });
+        assert.equal( spy.callCount, 0 );
+      } );
 
-      test("should execute callback with null value when no data stored", function() {
+      test( "should execute callback with null value when no data stored", function() {
         var spy = sinon.spy();
 
-        dataRequest.getItem(sheetKey, spy);
+        dataRequest.getItem( sheetKey, spy );
 
-        assert.isTrue(spy.calledWith(null));
-      });
+        assert.isTrue( spy.calledWith( null ) );
+      } );
 
-      test("should execute callback providing data", function() {
+      test( "should execute callback providing data", function() {
         var spy = sinon.spy();
 
-        localStorage.setItem(sheetKey, JSON.stringify({data: {results: sheetData.values}, timestamp: ""}));
+        localStorage.setItem( sheetKey, JSON.stringify( { data: { results: sheetData.values }, timestamp: "" } ) );
 
-        dataRequest.getItem(sheetKey, spy);
+        dataRequest.getItem( sheetKey, spy );
 
-        assert.isTrue(spy.calledWith({data: {results: sheetData.values}, timestamp: ""}));
-      });
-    });
+        assert.isTrue( spy.calledWith( { data: { results: sheetData.values }, timestamp: "" } ) );
+      } );
+    } );
 
-    suite("deleteItem", function () {
-      setup(function () {
-        localStorage.setItem(sheetKey, JSON.stringify({data: {results: sheetData.values}, timestamp: ""}));
-      });
+    suite( "deleteItem", function() {
+      setup( function() {
+        localStorage.setItem( sheetKey, JSON.stringify( { data: { results: sheetData.values }, timestamp: "" } ) );
+      } );
 
-      teardown(function () {
-        localStorage.removeItem(sheetKey);
-      });
+      teardown( function() {
+        localStorage.removeItem( sheetKey );
+      } );
 
-      test("Should not delete data when no key provided", function () {
+      test( "Should not delete data when no key provided", function() {
         dataRequest.deleteItem();
 
-        assert.deepEqual(JSON.parse(localStorage.getItem(sheetKey)), {data: {results: sheetData.values}, timestamp: ""});
-      });
+        assert.deepEqual( JSON.parse( localStorage.getItem( sheetKey ) ), { data: { results: sheetData.values }, timestamp: "" } );
+      } );
 
-      test("Should ensure data is removed", function () {
-        dataRequest.deleteItem(sheetKey);
+      test( "Should ensure data is removed", function() {
+        dataRequest.deleteItem( sheetKey );
 
-        assert.isNull(localStorage.getItem(sheetKey));
-      });
-    });
+        assert.isNull( localStorage.getItem( sheetKey ) );
+      } );
+    } );
 
-  });
+  } );
 </script>
 </body>
 </html>

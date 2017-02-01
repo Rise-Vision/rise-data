@@ -18,46 +18,47 @@
 <script src="../../node_modules/widget-tester/mocks/localStorage-mock.js"></script>
 
 <script>
+  /* global sinon, suite, test, assert, setup, teardown */
 
-  var dataRequest = document.querySelector("#request");
+  var dataRequest = document.querySelector( "#request" );
 
   // mock logger getting display id and force handler of RC not running
-  sinon.stub(dataRequest.$.logger.$.displayId, "generateRequest", function() {
+  sinon.stub( dataRequest.$.logger.$.displayId, "generateRequest", function() {
     dataRequest.$.logger._onDisplayIdError();
-  });
+  } );
 
   // mock ping and force handler of RC not running
-  sinon.stub(dataRequest.$.ping, "generateRequest", function() {
+  sinon.stub( dataRequest.$.ping, "generateRequest", function() {
     dataRequest._handlePingError();
-  });
+  } );
 
-  suite("rise-data", function () {
+  suite( "rise-data", function() {
 
-    suite("_isValidUsage", function () {
+    suite( "_isValidUsage", function() {
 
-      test("should return true when 'standalone' or 'widget'", function () {
-        assert.isTrue(dataRequest._isValidUsage("widget"));
-        assert.isTrue(dataRequest._isValidUsage("standalone"));
-      });
+      test( "should return true when 'standalone' or 'widget'", function() {
+        assert.isTrue( dataRequest._isValidUsage( "widget" ) );
+        assert.isTrue( dataRequest._isValidUsage( "standalone" ) );
+      } );
 
-      test("should return false when invalid", function () {
-        assert.isFalse(dataRequest._isValidUsage("test"));
-      });
+      test( "should return false when invalid", function() {
+        assert.isFalse( dataRequest._isValidUsage( "test" ) );
+      } );
 
-    });
+    } );
 
     suite( "_handlePingResponse", function() {
 
-      test( "should fire 'rise-data-ping-received'", function(done) {
-        var responseHandler = function (response) {
-          assert.isTrue(response.detail);
+      test( "should fire 'rise-data-ping-received'", function( done ) {
+        var responseHandler = function( response ) {
+          assert.isTrue( response.detail );
 
-          dataRequest.removeEventListener("rise-data-ping-received", responseHandler);
+          dataRequest.removeEventListener( "rise-data-ping-received", responseHandler );
 
           done();
         };
 
-        dataRequest.addEventListener("rise-data-ping-received", responseHandler);
+        dataRequest.addEventListener( "rise-data-ping-received", responseHandler );
 
         dataRequest._handlePingResponse( null, { response: { name: "rise-cache-v2", version: "0.0.0" } } );
       } );
@@ -66,49 +67,49 @@
 
     suite( "_handlePingError", function() {
 
-      test( "should fire 'rise-data-ping-received'", function(done) {
-        var responseHandler = function (response) {
-          assert.isFalse(response.detail);
+      test( "should fire 'rise-data-ping-received'", function( done ) {
+        var responseHandler = function( response ) {
+          assert.isFalse( response.detail );
 
-          dataRequest.removeEventListener("rise-data-ping-received", responseHandler);
+          dataRequest.removeEventListener( "rise-data-ping-received", responseHandler );
 
           done();
         };
 
-        dataRequest.addEventListener("rise-data-ping-received", responseHandler);
+        dataRequest.addEventListener( "rise-data-ping-received", responseHandler );
 
         dataRequest._handlePingError();
       } );
 
     } );
 
-    suite("ready", function() {
+    suite( "ready", function() {
       var logStub;
 
-      setup(function() {
-        logStub = sinon.stub(dataRequest.$.logger, "log");
-      });
+      setup( function() {
+        logStub = sinon.stub( dataRequest.$.logger, "log" );
+      } );
 
-      teardown(function() {
+      teardown( function() {
         logStub.restore();
         dataRequest.usage = "";
-      });
+      } );
 
-      test("should log usage", function () {
+      test( "should log usage", function() {
         dataRequest.ready();
-        assert.equal(logStub.args[0][0],"component_data_events");
-        assert.include(JSON.stringify(logStub.args[0][1]),"{\"event\":\"ready\",\"version\":");
-      });
+        assert.equal( logStub.args[ 0 ][ 0 ], "component_data_events" );
+        assert.include( JSON.stringify( logStub.args[ 0 ][ 1 ] ), "{\"event\":\"ready\",\"version\":" );
+      } );
 
-      test("should log usage and include 'usage_type'", function() {
+      test( "should log usage and include 'usage_type'", function() {
         dataRequest.usage = "widget";
         dataRequest.ready();
-        assert.equal(logStub.args[0][0],"component_data_events");
-        assert.include(JSON.stringify(logStub.args[0][1]),"{\"event\":\"ready\",\"usage_type\":\"widget\",\"version\":");
-      });
-    });
+        assert.equal( logStub.args[ 0 ][ 0 ], "component_data_events" );
+        assert.include( JSON.stringify( logStub.args[ 0 ][ 1 ] ), "{\"event\":\"ready\",\"usage_type\":\"widget\",\"version\":" );
+      } );
+    } );
 
-  });
+  } );
 </script>
 </body>
 </html>
