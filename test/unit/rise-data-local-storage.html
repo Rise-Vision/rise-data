@@ -83,6 +83,16 @@
 
         assert.isTrue( spy.calledWith( { data: { results: sheetData.values }, timestamp: "" } ) );
       } );
+
+      test( "should return date object when a date string is saved", function() {
+        var spy = sinon.spy();
+
+        localStorage.setItem( sheetKey, JSON.stringify( { data: { results: sheetData.date }, timestamp: "" } ) );
+
+        dataRequest.getItem( sheetKey, spy );
+
+        assert.isTrue( spy.calledWith( { data: { results: sheetData.date }, timestamp: "" } ) );
+      } );
     } );
 
     suite( "deleteItem", function() {
