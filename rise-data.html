@@ -32,7 +32,7 @@
 </dom-module>
 
 <!-- build:version -->
-<script>var dataVersion = "1.2.0";</script>
+<script>var dataVersion = "1.2.1";</script>
 <!-- endbuild -->
 
 <script>
@@ -147,12 +147,20 @@
       },
 
       _handleCacheResponse: function( e, resp ) {
+        var data = null;
+
         if ( this._callback && typeof this._callback === "function" ) {
           if ( resp && resp.response ) {
-            this._callback( resp.response.value );
-          } else {
-            this._callback( null );
+            data = resp.response.value;
+
+            // On a PUT request the response comes as object
+            if ( data !== null && typeof data === "object" ) {
+              data = JSON.stringify( data )
+            }
+            data = JSON.parse( data, this._dateReviver );
           }
+
+          this._callback( data );
         }
 
         if ( this.$.cache.method === "POST" ) {
@@ -205,7 +213,7 @@
 
         this.$.cache.method = ( _.indexOf( this._keys, key ) !== -1 ) ? "PUT" : "POST";
         this.$.cache.url = this._getCacheUrl( key );
-        this.$.cache.body = this._getCacheBody( key, data );
+        this.$.cache.body = this._getCacheBody( key, JSON.stringify( data ) );
 
         this.$.cache.generateRequest();
       },

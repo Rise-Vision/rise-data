@@ -1,6 +1,6 @@
 {
   "name": "rise-data",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Web component for storing data",
   "scripts": {
     "test": "gulp test",
