@@ -107,7 +107,7 @@
       test( "Should not delete data when no key provided", function() {
         dataRequest.deleteItem();
 
-        assert.deepEqual( JSON.parse( localStorage.getItem( sheetKey ) ), { data: { results: sheetData.values }, timestamp: "" } );
+        assert.isNotNull( localStorage.getItem( sheetKey ) );
       } );
 
       test( "Should ensure data is removed", function() {

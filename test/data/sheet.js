@@ -7,7 +7,8 @@ var sheetData = {
     [ "Name", "Type", "Total" ],
     [ "Apple", "Fruit", "0.99" ],
     [ "Milk", "Drink", "3.99" ],
-    [ "Crackers", "Snack", "5.99" ]
+    [ "Crackers", "Snack", "5.99" ],
+    [ new Date( 2017, 1, 15, 0, 0, 0 ), new Date( 2017, 1, 15, 0, 0, 0 ), new Date( 2017, 1, 15, 0, 0, 0 ) ]
     ],
     "date": new Date( 2017, 1, 15, 0, 0, 0 )
   },
