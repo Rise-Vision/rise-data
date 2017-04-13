@@ -145,14 +145,6 @@
         assert.isTrue( spy.calledOnce );
       } );
 
-      test( "should reset callback value when request method was GET", function() {
-        dataRequest._callback = function() {};
-        dataRequest.$.cache.method = "GET";
-        dataRequest._handleCacheError( null, resp );
-
-        assert.isNull( dataRequest._callback );
-      } );
-
       test( "should not log if request method was GET and error status code was 404", function() {
         dataRequest._callback = function() {};
         dataRequest.$.cache.method = "GET";

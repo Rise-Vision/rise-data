@@ -32,7 +32,7 @@
 </dom-module>
 
 <!-- build:version -->
-<script>var dataVersion = "1.2.1";</script>
+<script>var dataVersion = "1.3.0";</script>
 <!-- endbuild -->
 
 <script>
@@ -85,6 +85,8 @@
 
       _callback: null,
 
+      _key: null,
+
       /**
        * Fired when a ping to Rise Cache has been received.
        *
@@ -116,14 +118,27 @@
         return body;
       },
 
+      _getCachedDataFromLocalStorage: function( key, cb ) {
+        var data = null;
+
+        if ( supportsLocalStorage() ) {
+          // retrieve cached data and parse back
+          data = JSON.parse( localStorage.getItem( key ), this._dateReviver );
+          cb( data );
+        } else {
+          cb( data );
+        }
+      },
+
       _handleCacheError: function( e, resp ) {
         var params = {
           event: "error"
         };
 
         if ( this.$.cache.method === "GET" && this._callback && typeof this._callback === "function" ) {
-          this._callback( null );
-          this._callback = null;
+
+          // fallback to get data from local storage
+          this._getCachedDataFromLocalStorage( this._key, this._callback );
 
           // don't continue with logging if 404
           if ( resp.request.status === 404 ) {
@@ -196,6 +211,7 @@
         this.$.cache.body = this._getCacheBody( key );
 
         this._callback = cb;
+        this._key = key;
         this.$.cache.generateRequest();
       },
 
@@ -252,17 +268,16 @@
        */
       saveItem: function( key, data ) {
         if ( this._pingReceived && key && data ) {
-          if ( !this._isCacheRunning ) {
-            if ( supportsLocalStorage() ) {
-              try {
-                localStorage.setItem( key, JSON.stringify( data ) );
-              } catch ( e ) {
-                // TODO: use logger to log failure?
-              }
-            }
-          } else {
+          if ( this._isCacheRunning ) {
             if ( this.endpoint ) {
               this._save( key, data );
+            }
+          }
+          if ( supportsLocalStorage() ) {
+            try {
+              localStorage.setItem( key, JSON.stringify( data ) );
+            } catch ( e ) {
+              // TODO: use logger to log failure?
             }
           }
         }
@@ -294,16 +309,12 @@
        * @param {Function} cb The callback to execute with provided data
        */
       getItem: function( key, cb ) {
-        var data = null;
 
         if ( this._pingReceived && key && cb && typeof cb === "function" ) {
           if ( !this._isCacheRunning ) {
-            if ( supportsLocalStorage() ) {
-              // retrieve cached data and parse back
-              data = JSON.parse( localStorage.getItem( key ), this._dateReviver );
 
-              cb( data );
-            }
+            this._getCachedDataFromLocalStorage( key, cb );
+
           } else {
             if ( this.endpoint ) {
               this._get( key, cb );
@@ -321,17 +332,17 @@
        */
       deleteItem: function( key ) {
         if ( this._pingReceived && key ) {
-          if ( !this._isCacheRunning ) {
-            if ( supportsLocalStorage() ) {
-              try {
-                localStorage.removeItem( key );
-              } catch ( ex ) {
-                // TODO: use logger to log failure?
-              }
-            }
-          } else {
+          if ( this._isCacheRunning ) {
             if ( this.endpoint ) {
               this._delete( key );
+            }
+          }
+
+          if ( supportsLocalStorage() ) {
+            try {
+              localStorage.removeItem( key );
+            } catch ( ex ) {
+              // TODO: use logger to log failure?
             }
           }
         }
