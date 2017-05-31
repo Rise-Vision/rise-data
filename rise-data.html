@@ -13,7 +13,7 @@
     <rise-logger id="logger"></rise-logger>
 
     <iron-ajax id="ping"
-               url="https://localhost:9494"
+               url="{{_baseCacheUrl}}"
                handle-as="json"
                on-response="_handlePingResponse"
                on-error="_handlePingError"
@@ -32,7 +32,7 @@
 </dom-module>
 
 <!-- build:version -->
-<script>var dataVersion = "1.3.1";</script>
+<script>var dataVersion = "1.3.2";</script>
 <!-- endbuild -->
 
 <script>
@@ -41,8 +41,7 @@
 
     "use strict";
 
-    var BQ_TABLE_NAME = "component_data_events",
-      BASE_CACHE_URL = "https://localhost:9494";
+    var BQ_TABLE_NAME = "component_data_events";
 
     function supportsLocalStorage() {
       try {
@@ -87,6 +86,10 @@
 
       _key: null,
 
+      _retriedHttp: false,
+
+      _baseCacheUrl: "https://localhost:9494",
+
       /**
        * Fired when a ping to Rise Cache has been received.
        *
@@ -98,7 +101,7 @@
       },
 
       _getCacheUrl: function( key ) {
-        var url = BASE_CACHE_URL + "/" + this.endpoint;
+        var url = this._baseCacheUrl + "/" + this.endpoint;
 
         if ( this.$.cache.method === "PUT" || this.$.cache.method === "DELETE" || this.$.cache.method === "GET" ) {
           url += "/" + key;
@@ -197,10 +200,23 @@
       },
 
       _handlePingError: function() {
-        this._isCacheRunning = false;
-        this._pingReceived = true;
 
-        this.fire( "rise-data-ping-received", this._isCacheRunning );
+        if ( this._retriedHttp ) {
+
+          this._isCacheRunning = false;
+          this._pingReceived = true;
+
+          this.fire( "rise-data-ping-received", this._isCacheRunning );
+
+        } else {
+          this._retryPingHttp();
+        }
+      },
+
+      _retryPingHttp: function() {
+        this._baseCacheUrl = "http://localhost:9494";
+        this._retriedHttp = true;
+        this.$.ping.generateRequest();
       },
 
       _get: function( key, cb ) {
