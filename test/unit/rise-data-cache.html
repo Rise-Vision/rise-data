@@ -38,6 +38,7 @@
 
       suiteSetup( function() {
         dataRequest.endpoint = "spreadsheets"
+        dataRequest._baseCacheUrl = "https://localhost:9494";
       } );
 
       suiteTeardown( function() {
