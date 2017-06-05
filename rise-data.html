@@ -32,7 +32,7 @@
 </dom-module>
 
 <!-- build:version -->
-<script>var dataVersion = "1.3.3";</script>
+<script>var dataVersion = "1.3.4";</script>
 <!-- endbuild -->
 
 <script>
@@ -88,7 +88,7 @@
 
       _retriedHttp: false,
 
-      _baseCacheUrl: "https://localhost:9494",
+      _baseCacheUrl: "https://localhost:9495",
 
       /**
        * Fired when a ping to Rise Cache has been received.
@@ -254,7 +254,7 @@
        * An instance of the element was inserted into the DOM.
        */
       attached: function() {
-        this._baseCacheUrl = "https://localhost:9494";
+        this._baseCacheUrl = "https://localhost:9495";
         this.$.ping.generateRequest();
       },
 
