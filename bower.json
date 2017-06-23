@@ -1,6 +1,6 @@
 {
   "name": "rise-data",
-  "version": "1.3.4",
+  "version": "1.3.5",
   "authors": [
     "Rise Vision"
   ],
@@ -21,7 +21,7 @@
   "dependencies": {
     "iron-ajax": "PolymerElements/iron-ajax#^1.0.0",
     "polymer": "Polymer/polymer#^1.0.0",
-    "rise-logger": "https://github.com/Rise-Vision/rise-logger.git#1.0.8",
+    "rise-logger": "https://github.com/Rise-Vision/rise-logger.git#1.0.9",
     "underscore": "~1.8.2"
   },
   "devDependencies": {
