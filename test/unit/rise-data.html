@@ -123,6 +123,41 @@
 
     } );
 
+    suite( "_getParamsForLoggingError", function() {
+
+      teardown( function() {
+        dataRequest.usage = "";
+        dataRequest.endpoint = "";
+      } );
+
+      test( "should provide correct params including message and usage type", function() {
+        var params;
+
+        dataRequest.usage = "widget";
+        dataRequest.endpoint = "spreadsheet";
+        params = dataRequest._getParamsForLoggingError( "Test message" );
+
+        assert.equal( params.event, "error" );
+        assert.property( params, "version" );
+        assert.property( params, "event_details" );
+        assert.equal( params.event_details, "[spreadsheet] Test message" );
+        assert.property( params, "usage_type" );
+        assert.equal( params.usage_type, "widget" );
+      } );
+
+      test( "should provide correct params without message and usage type", function() {
+        var params;
+
+        params = dataRequest._getParamsForLoggingError();
+
+        assert.equal( params.event, "error" );
+        assert.property( params, "version" );
+        assert.notProperty( params, "event_details" );
+        assert.notProperty( params, "usage_type" );
+      } );
+
+    } );
+
     suite( "ready", function() {
       var logStub;
 
