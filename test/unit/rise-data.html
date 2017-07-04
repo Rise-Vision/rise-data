@@ -47,6 +47,22 @@
 
     } );
 
+    suite( "_isRiseCacheSchemeEnabled", function() {
+
+      test( "should return false if top window flag doesn't exist", function() {
+        assert.isFalse( dataRequest._isRiseCacheSchemeEnabled() );
+      } );
+
+      test( "should return true if last event is throttled", function() {
+        top.enableRiseCacheScheme = true;
+
+        assert.isTrue( dataRequest._isRiseCacheSchemeEnabled() );
+
+        top.enableRiseCacheScheme = false;
+      } );
+
+    } );
+
     suite( "_handlePingResponse", function() {
 
       test( "should fire 'rise-data-ping-received'", function( done ) {
@@ -83,6 +99,30 @@
 
     } );
 
+    suite( "_retryPingHttp", function() {
+
+      test( "should set ping request url to use 'rchttp' scheme", function() {
+        sinon.stub( dataRequest, "_isRiseCacheSchemeEnabled", function() {
+          return true;
+        } );
+        dataRequest._retryPingHttp();
+
+        assert.isTrue( dataRequest.$.ping.url.startsWith( "rchttp://" ) );
+        dataRequest._isRiseCacheSchemeEnabled.restore();
+      } );
+
+      test( "should set ping request url to not use 'rchttp' scheme", function() {
+        sinon.stub( dataRequest, "_isRiseCacheSchemeEnabled", function() {
+          return false;
+        } );
+        dataRequest._retryPingHttp();
+
+        assert.isTrue( dataRequest.$.ping.url.startsWith( "http://" ) );
+        dataRequest._isRiseCacheSchemeEnabled.restore();
+      } );
+
+    } );
+
     suite( "ready", function() {
       var logStub;
 
@@ -107,6 +147,30 @@
         assert.equal( logStub.args[ 0 ][ 0 ], "component_data_events" );
         assert.include( JSON.stringify( logStub.args[ 0 ][ 1 ] ), "{\"event\":\"ready\",\"usage_type\":\"widget\",\"version\":" );
       } );
+    } );
+
+    suite( "attached", function() {
+
+      test( "should set ping request url to use 'rchttps' scheme", function() {
+        sinon.stub( dataRequest, "_isRiseCacheSchemeEnabled", function() {
+          return true;
+        } );
+        dataRequest.attached();
+
+        assert.isTrue( dataRequest.$.ping.url.startsWith( "rchttps://" ) );
+        dataRequest._isRiseCacheSchemeEnabled.restore();
+      } );
+
+      test( "should set ping request url to not use 'rchttp' scheme", function() {
+        sinon.stub( dataRequest, "_isRiseCacheSchemeEnabled", function() {
+          return false;
+        } );
+        dataRequest.attached();
+
+        assert.isTrue( dataRequest.$.ping.url.startsWith( "https://" ) );
+        dataRequest._isRiseCacheSchemeEnabled.restore();
+      } );
+
     } );
 
   } );

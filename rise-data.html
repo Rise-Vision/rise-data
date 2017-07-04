@@ -100,6 +100,18 @@
         return usage === "standalone" || usage === "widget";
       },
 
+      _isRiseCacheSchemeEnabled: function() {
+        try {
+          if ( top.enableRiseCacheScheme ) {
+            return true;
+          }
+        } catch ( err ) {
+          console.log( "rise-data._isRiseCacheSchemeEnabled", err ); // eslint-disable-line no-console
+        }
+
+        return false;
+      },
+
       _getCacheUrl: function( key ) {
         var url = this._baseCacheUrl + "/" + this.endpoint;
 
@@ -214,7 +226,9 @@
       },
 
       _retryPingHttp: function() {
-        this._baseCacheUrl = "http://localhost:9494";
+        var protocol = ( this._isRiseCacheSchemeEnabled() ) ? "rchttp://" : "http://";
+
+        this._baseCacheUrl = protocol + "localhost:9494";
         this._retriedHttp = true;
         this.$.ping.generateRequest();
       },
@@ -254,7 +268,9 @@
        * An instance of the element was inserted into the DOM.
        */
       attached: function() {
-        this._baseCacheUrl = "https://localhost:9495";
+        var protocol = ( this._isRiseCacheSchemeEnabled() ) ? "rchttps://" : "https://";
+
+        this._baseCacheUrl = protocol + "localhost:9495";
         this.$.ping.generateRequest();
       },
 
