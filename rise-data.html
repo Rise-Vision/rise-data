@@ -292,7 +292,10 @@
           if ( response.ok ) {
             return Promise.resolve( response );
           } else {
-            return Promise.reject( new Error( JSON.stringify( response ) ) );
+            return Promise.reject( new Error( JSON.stringify( {
+              status: response.status,
+              statusText: "The request failed with status code: " + response.status
+            } ) ) );
           }
         } ).then( function( response ) {
           return response.json();
@@ -330,7 +333,7 @@
 
       _save: function( key, data ) {
         var method = ( _.indexOf( this._keys, key ) !== -1 ) ? "PUT" : "POST",
-          url = this._getCacheUrl( key ),
+          url = this._getCacheUrl( key, method ),
           body = JSON.stringify( this._getCacheBody( key, data, method ) );
 
         this._currentKey = key;

@@ -419,7 +419,7 @@
         assert.isTrue( requestStub.calledOnce );
       } );
 
-      test( "should use Fetch to request to Rise Cache", function() {
+      test( "should use Fetch to POST request to Rise Cache", function() {
         var fetchStub = sinon.stub( dataRequest, "_fetch" );
 
         sinon.stub( dataRequest, "_isRiseCacheSchemeEnabled", function() {
@@ -439,6 +439,26 @@
         assert.property( JSON.parse( fetchStub.args[ 0 ][ 2 ] ).value, "results" );
         assert.isArray( JSON.parse( fetchStub.args[ 0 ][ 2 ] ).value.results );
         assert.equal( JSON.parse( fetchStub.args[ 0 ][ 2 ] ).value.results.length, 5 );
+
+        dataRequest._fetch.restore();
+        dataRequest._isRiseCacheSchemeEnabled.restore();
+      } );
+
+      test( "should use Fetch to PUT request to Rise Cache", function() {
+        var fetchStub = sinon.stub( dataRequest, "_fetch" );
+
+        sinon.stub( dataRequest, "_isRiseCacheSchemeEnabled", function() {
+          return true;
+        } );
+
+        dataRequest.endpoint = "spreadsheets";
+        dataRequest._keys = [ sheetKey ];
+        dataRequest._save( sheetKey, { results: sheetData.values } );
+
+        assert.equal( requestStub.callCount, 0 );
+
+        assert.equal( fetchStub.args[ 0 ][ 0 ], "PUT" );
+        assert.include( fetchStub.args[ 0 ][ 1 ], "/spreadsheets/risesheet_abc" );
 
         dataRequest._fetch.restore();
         dataRequest._isRiseCacheSchemeEnabled.restore();
