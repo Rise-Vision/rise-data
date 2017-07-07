@@ -105,9 +105,7 @@
           if ( top.enableRiseCacheScheme ) {
             return true;
           }
-        } catch ( err ) {
-          console.log( "rise-data._isRiseCacheSchemeEnabled", err ); // eslint-disable-line no-console
-        }
+        } catch ( err ) {} // eslint-disable-line no-empty
 
         return false;
       },
