@@ -32,7 +32,7 @@
 </dom-module>
 
 <!-- build:version -->
-<script>var dataVersion = "1.3.6";</script>
+<script>var dataVersion = "1.3.7";</script>
 <!-- endbuild -->
 
 <script>
@@ -100,20 +100,32 @@
         return usage === "standalone" || usage === "widget";
       },
 
-      _getCacheUrl: function( key ) {
+      _isRiseCacheSchemeEnabled: function() {
+        try {
+          if ( top.enableRiseCacheScheme ) {
+            return true;
+          }
+        } catch ( err ) {
+          console.log( "rise-data._isRiseCacheSchemeEnabled", err ); // eslint-disable-line no-console
+        }
+
+        return false;
+      },
+
+      _getCacheUrl: function( key, method ) {
         var url = this._baseCacheUrl + "/" + this.endpoint;
 
-        if ( this.$.cache.method === "PUT" || this.$.cache.method === "DELETE" || this.$.cache.method === "GET" ) {
+        if ( method === "PUT" || method === "DELETE" || method === "GET" ) {
           url += "/" + key;
         }
 
         return url;
       },
 
-      _getCacheBody: function( key, data ) {
+      _getCacheBody: function( key, data, method ) {
         var body = {};
 
-        if ( this.$.cache.method === "POST" || this.$.cache.method === "PUT" ) {
+        if ( method === "POST" || method === "PUT" ) {
           body.key = key;
           body.value = data;
         }
@@ -133,11 +145,25 @@
         }
       },
 
-      _handleCacheError: function( e, resp ) {
+      _getParamsForLoggingError: function( message ) {
         var params = {
-          event: "error"
+          event: "error",
+          version: dataVersion
         };
 
+        if ( message ) {
+          params.event_details = "[" + this.endpoint + "] " + message;
+        }
+
+        // only include usage_type if it's a valid usage value
+        if ( this._isValidUsage( this.usage ) ) {
+          params.usage_type = this.usage;
+        }
+
+        return params;
+      },
+
+      _handleCacheError: function( e, resp ) {
         if ( this.$.cache.method === "GET" && this._callback && typeof this._callback === "function" ) {
 
           // fallback to get data from local storage
@@ -149,19 +175,19 @@
           }
         }
 
-        if ( resp.error ) {
-          params.event_details = "[" + this.endpoint + "] " + resp.error.message;
-        }
+        // log usage
+        this.$.logger.log( BQ_TABLE_NAME, this._getParamsForLoggingError( ( resp.error ) ? resp.error.message : "" ) );
+      },
 
-        // only include usage_type if it's a valid usage value
-        if ( this._isValidUsage( this.usage ) ) {
-          params.usage_type = this.usage;
-        }
+      _handleCacheFetchError: function( error ) {
+        var resp = {};
 
-        params.version = dataVersion;
+        try {
+          resp = JSON.parse( error.message );
+        } catch ( err ) {} // eslint-disable-line no-empty
 
         // log usage
-        this.$.logger.log( BQ_TABLE_NAME, params );
+        this.$.logger.log( BQ_TABLE_NAME, this._getParamsForLoggingError( resp.statusText || error.message ) );
       },
 
       _handleCacheResponse: function( e, resp ) {
@@ -192,6 +218,28 @@
 
       },
 
+      _handleCacheFetchResponse: function( json, method ) {
+        var data = JSON.stringify( json );
+
+        if ( this._callback && typeof this._callback === "function" ) {
+          try {
+            data = JSON.parse( data, this._dateReviver );
+          } catch ( err ) {
+            data = null;
+            console.log( "rise-data._handleCacheFetchResponse", err ); // eslint-disable-line no-console
+          }
+
+          this._callback( data );
+        }
+
+        if ( method === "POST" ) {
+          this._keys.push( this._currentKey );
+        }
+
+        // reset callback value
+        this._callback = null;
+      },
+
       _handlePingResponse: function( e, resp ) {
         this._isCacheRunning = resp.response && resp.response !== "";
         this._pingReceived = true;
@@ -214,16 +262,57 @@
       },
 
       _retryPingHttp: function() {
-        this._baseCacheUrl = "http://localhost:9494";
+        var protocol = ( this._isRiseCacheSchemeEnabled() ) ? "rchttp://" : "http://";
+
+        this._baseCacheUrl = protocol + "localhost:9494";
         this._retriedHttp = true;
         this.$.ping.generateRequest();
       },
 
+      _fetch: function( method, url, body ) {
+        var headers = new Headers( {
+            "Content-Type": "application/json"
+          } ),
+          init = {
+            method: method,
+            mode: "cors",
+            headers: headers,
+            cache: "no-cache"
+          },
+          that = this,
+          req;
+
+        if ( body ) {
+          init.body = body;
+        }
+
+        req = new Request( url, init );
+
+        fetch( req ).then( function( response ) {
+          if ( response.ok ) {
+            return Promise.resolve( response );
+          } else {
+            return Promise.reject( new Error( JSON.stringify( {
+              status: response.status,
+              statusText: "The request failed with status code: " + response.status
+            } ) ) );
+          }
+        } ).then( function( response ) {
+          return response.json();
+        } ).then( function( json ) {
+          that._handleCacheFetchResponse( json, method );
+        } ).catch( function( error ) {
+          that._handleCacheFetchError( error );
+        } );
+      },
+
       _get: function( key, cb ) {
+        var method = "GET";
+
         this._currentKey = key;
 
-        this.$.cache.method = "GET";
-        this.$.cache.url = this._getCacheUrl( key );
+        this.$.cache.method = method;
+        this.$.cache.url = this._getCacheUrl( key, method );
         this.$.cache.body = this._getCacheBody( key );
 
         this._callback = cb;
@@ -232,29 +321,41 @@
       },
 
       _delete: function( key ) {
+        var method = "DELETE";
+
         this._currentKey = key;
 
-        this.$.cache.method = "DELETE";
-        this.$.cache.url = this._getCacheUrl( key );
+        this.$.cache.method = method;
+        this.$.cache.url = this._getCacheUrl( key, method );
         this.$.cache.body = this._getCacheBody( key );
         this.$.cache.generateRequest();
       },
 
       _save: function( key, data ) {
+        var method = ( _.indexOf( this._keys, key ) !== -1 ) ? "PUT" : "POST",
+          url = this._getCacheUrl( key, method ),
+          body = JSON.stringify( this._getCacheBody( key, data, method ) );
+
         this._currentKey = key;
 
-        this.$.cache.method = ( _.indexOf( this._keys, key ) !== -1 ) ? "PUT" : "POST";
-        this.$.cache.url = this._getCacheUrl( key );
-        this.$.cache.body = this._getCacheBody( key, JSON.stringify( data ) );
+        if ( this._isRiseCacheSchemeEnabled() ) {
+          this._fetch( method, url, body );
+        } else {
+          this.$.cache.method = method;
+          this.$.cache.url = url;
+          this.$.cache.body = body;
 
-        this.$.cache.generateRequest();
+          this.$.cache.generateRequest();
+        }
       },
 
       /**
        * An instance of the element was inserted into the DOM.
        */
       attached: function() {
-        this._baseCacheUrl = "https://localhost:9495";
+        var protocol = ( this._isRiseCacheSchemeEnabled() ) ? "rchttps://" : "https://";
+
+        this._baseCacheUrl = protocol + "localhost:9495";
         this.$.ping.generateRequest();
       },
 

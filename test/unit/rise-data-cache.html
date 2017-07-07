@@ -51,22 +51,22 @@
 
       test( "should return correct URL when request method is POST", function() {
         dataRequest.$.cache.method = "POST";
-        assert.equal( dataRequest._getCacheUrl( sheetKey ), "https://localhost:9494/spreadsheets" );
+        assert.equal( dataRequest._getCacheUrl( sheetKey, "POST" ), "https://localhost:9494/spreadsheets" );
       } );
 
       test( "should return correct URL when request method is GET", function() {
         dataRequest.$.cache.method = "GET";
-        assert.equal( dataRequest._getCacheUrl( sheetKey ), "https://localhost:9494/spreadsheets/" + sheetKey );
+        assert.equal( dataRequest._getCacheUrl( sheetKey, "GET" ), "https://localhost:9494/spreadsheets/" + sheetKey );
       } );
 
       test( "should return correct URL when request method is PUT", function() {
         dataRequest.$.cache.method = "PUT";
-        assert.equal( dataRequest._getCacheUrl( sheetKey ), "https://localhost:9494/spreadsheets/" + sheetKey );
+        assert.equal( dataRequest._getCacheUrl( sheetKey, "PUT" ), "https://localhost:9494/spreadsheets/" + sheetKey );
       } );
 
       test( "should return correct URL when request method is DELETE", function() {
         dataRequest.$.cache.method = "DELETE";
-        assert.equal( dataRequest._getCacheUrl( sheetKey ), "https://localhost:9494/spreadsheets/" + sheetKey );
+        assert.equal( dataRequest._getCacheUrl( sheetKey, "DELETE" ), "https://localhost:9494/spreadsheets/" + sheetKey );
       } );
 
     } );
@@ -79,18 +79,18 @@
 
       test( "should return empty object when request method is GET", function() {
         dataRequest.$.cache.method = "GET";
-        assert.deepEqual( dataRequest._getCacheBody( sheetKey, sheetData.values ), {} );
+        assert.deepEqual( dataRequest._getCacheBody( sheetKey, sheetData.values ), {}, "GET" );
       } );
 
       test( "should return empty object when request method is DELETE", function() {
         dataRequest.$.cache.method = "DELETE";
-        assert.deepEqual( dataRequest._getCacheBody( sheetKey, sheetData.values ), {} );
+        assert.deepEqual( dataRequest._getCacheBody( sheetKey, sheetData.values ), {}, "DELETE" );
       } );
 
       test( "should return body object value when request is a POST", function() {
         dataRequest.$.cache.method = "POST";
 
-        assert.deepEqual( dataRequest._getCacheBody( sheetKey, sheetData.values ), {
+        assert.deepEqual( dataRequest._getCacheBody( sheetKey, sheetData.values, "POST" ), {
           key: sheetKey,
           value: sheetData.values
         } );
@@ -99,7 +99,7 @@
       test( "should return body object value when request is a PUT", function() {
         dataRequest.$.cache.method = "PUT";
 
-        assert.deepEqual( dataRequest._getCacheBody( sheetKey, sheetData.values ), {
+        assert.deepEqual( dataRequest._getCacheBody( sheetKey, sheetData.values, "PUT" ), {
           key: sheetKey,
           value: sheetData.values
         } );
@@ -167,7 +167,51 @@
         dataRequest._handleCacheError( null, resp );
 
         assert.equal( logStub.args[ 0 ][ 0 ], "component_data_events" );
-        assert.include( JSON.stringify( logStub.args[ 0 ][ 1 ] ), "{\"event\":\"error\",\"event_details\":\"[spreadsheets] The request failed with status: 500\",\"version\":" );
+        assert.equal( logStub.args[ 0 ][ 1 ].event, "error" );
+        assert.property( logStub.args[ 0 ][ 1 ], "version" );
+        assert.equal( logStub.args[ 0 ][ 1 ].event_details, "[spreadsheets] The request failed with status: 500" );
+      } );
+
+    } );
+
+    suite( "_handleCacheFetchError", function() {
+      var logStub;
+
+      setup( function() {
+        dataRequest.endpoint = "spreadsheets";
+        logStub = sinon.stub( dataRequest.$.logger, "log" );
+      } );
+
+      teardown( function() {
+        dataRequest.endpoint = "";
+        logStub.restore();
+      } );
+
+      test( "should log error details with fetch response object status text", function() {
+        var resp = {
+            status: 500,
+            statusText: "The request failed with status: 500",
+            ok: false
+          },
+          error = new Error( JSON.stringify( resp ) );
+
+        dataRequest._handleCacheFetchError( error );
+
+        assert.equal( logStub.args[ 0 ][ 0 ], "component_data_events" );
+        assert.equal( logStub.args[ 0 ][ 1 ].event, "error" );
+        assert.property( logStub.args[ 0 ][ 1 ], "version" );
+        assert.equal( logStub.args[ 0 ][ 1 ].event_details, "[spreadsheets] The request failed with status: 500" );
+      } );
+
+      test( "should log error details with error object message", function() {
+        var error = new Error( "The request failed with status: 500" );
+
+        dataRequest._handleCacheFetchError( error );
+
+        assert.equal( logStub.args[ 0 ][ 0 ], "component_data_events" );
+        assert.equal( logStub.args[ 0 ][ 1 ].event, "error" );
+        assert.property( logStub.args[ 0 ][ 1 ], "version" );
+        assert.equal( logStub.args[ 0 ][ 1 ].event_details, "[spreadsheets] The request failed with status: 500" );
       } );
 
     } );
@@ -223,6 +267,37 @@
       test( "should reset callback value", function() {
         dataRequest._callback = function() {};
         dataRequest._handleCacheResponse( null, resp );
+
+        assert.isNull( dataRequest._callback );
+      } );
+
+    } );
+
+    suite( "_handleCacheFetchResponse", function() {
+
+      teardown( function() {
+        dataRequest._callback = null;
+        dataRequest._currentKey = "";
+        dataRequest._keys = [];
+      } );
+
+      test( "should execute callback with correct data add key to list when request is POST", function() {
+        var spy;
+
+        dataRequest._callback = function() {};
+
+        spy = sinon.spy( dataRequest, "_callback" );
+
+        dataRequest._currentKey = sheetKey;
+        dataRequest._handleCacheFetchResponse( sheetData.values, "POST" );
+
+        assert.isTrue( spy.calledWith( sheetData.values ) );
+        assert.deepEqual( dataRequest._keys, [ sheetKey ] );
+      } );
+
+      test( "should reset callback value", function() {
+        dataRequest._callback = function() {};
+        dataRequest._handleCacheFetchResponse( sheetData.values, "POST" );
 
         assert.isNull( dataRequest._callback );
       } );
@@ -342,7 +417,52 @@
         dataRequest._save( sheetKey, { results: sheetData.values } );
 
         assert.isTrue( requestStub.calledOnce );
-      } )
+      } );
+
+      test( "should use Fetch to POST request to Rise Cache", function() {
+        var fetchStub = sinon.stub( dataRequest, "_fetch" );
+
+        sinon.stub( dataRequest, "_isRiseCacheSchemeEnabled", function() {
+          return true;
+        } );
+
+        dataRequest.endpoint = "spreadsheets";
+        dataRequest._save( sheetKey, { results: sheetData.values } );
+
+        assert.equal( requestStub.callCount, 0 );
+
+        assert.equal( fetchStub.args[ 0 ][ 0 ], "POST" );
+        assert.include( fetchStub.args[ 0 ][ 1 ], "/spreadsheets" );
+        assert.isString( fetchStub.args[ 0 ][ 1 ] );
+        assert.equal( JSON.parse( fetchStub.args[ 0 ][ 2 ] ).key, "risesheet_abc" );
+        assert.isObject( JSON.parse( fetchStub.args[ 0 ][ 2 ] ).value );
+        assert.property( JSON.parse( fetchStub.args[ 0 ][ 2 ] ).value, "results" );
+        assert.isArray( JSON.parse( fetchStub.args[ 0 ][ 2 ] ).value.results );
+        assert.equal( JSON.parse( fetchStub.args[ 0 ][ 2 ] ).value.results.length, 5 );
+
+        dataRequest._fetch.restore();
+        dataRequest._isRiseCacheSchemeEnabled.restore();
+      } );
+
+      test( "should use Fetch to PUT request to Rise Cache", function() {
+        var fetchStub = sinon.stub( dataRequest, "_fetch" );
+
+        sinon.stub( dataRequest, "_isRiseCacheSchemeEnabled", function() {
+          return true;
+        } );
+
+        dataRequest.endpoint = "spreadsheets";
+        dataRequest._keys = [ sheetKey ];
+        dataRequest._save( sheetKey, { results: sheetData.values } );
+
+        assert.equal( requestStub.callCount, 0 );
+
+        assert.equal( fetchStub.args[ 0 ][ 0 ], "PUT" );
+        assert.include( fetchStub.args[ 0 ][ 1 ], "/spreadsheets/risesheet_abc" );
+
+        dataRequest._fetch.restore();
+        dataRequest._isRiseCacheSchemeEnabled.restore();
+      } );
     } );
 
     suite( "saveItem", function() {
