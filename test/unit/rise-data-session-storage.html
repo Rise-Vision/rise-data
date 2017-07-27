@@ -12,10 +12,10 @@
 </head>
 <body>
 
-<rise-data id="request" storage-type="local"></rise-data>
+<rise-data id="request" storage-type="session"></rise-data>
 
 <script src="../data/sheet.js"></script>
-<script src="../../node_modules/widget-tester/mocks/localStorage-mock.js"></script>
+<script src="../../node_modules/widget-tester/mocks/sessionStorage-mock.js"></script>
 
 <script>
   /* global sinon, suite, test, assert, setup, teardown, sheetKey, sheetData */
@@ -32,21 +32,21 @@
     dataRequest._handlePingError();
   } );
 
-  suite( "localStorage", function() {
+  suite( "sessionStorage", function() {
 
     suite( "saveItem", function() {
 
       teardown( function() {
-        window.localStorageError = false;
-        localStorage.removeItem( sheetKey );
+        window.sessionStorageError = false;
+        sessionStorage.removeItem( sheetKey );
       } );
 
-      test( "should ensure data passed in localStorage.setItem() is stringified", function() {
+      test( "should ensure data passed in sessionStorage.setItem() is stringified", function() {
         var value;
 
         dataRequest.saveItem( sheetKey, { results: sheetData.values } );
 
-        value = localStorage.getItem( sheetKey );
+        value = sessionStorage.getItem( sheetKey );
 
         assert.isString( value );
       } );
@@ -55,7 +55,7 @@
 
     suite( "getItem", function() {
       teardown( function() {
-        localStorage.removeItem( sheetKey );
+        sessionStorage.removeItem( sheetKey );
       } );
 
       test( "should not execute callback without key param", function() {
@@ -77,7 +77,7 @@
       test( "should execute callback providing data", function() {
         var spy = sinon.spy();
 
-        localStorage.setItem( sheetKey, JSON.stringify( { data: { results: sheetData.values }, timestamp: "" } ) );
+        sessionStorage.setItem( sheetKey, JSON.stringify( { data: { results: sheetData.values }, timestamp: "" } ) );
 
         dataRequest.getItem( sheetKey, spy );
 
@@ -87,7 +87,7 @@
       test( "should return date object when a date string is saved", function() {
         var spy = sinon.spy();
 
-        localStorage.setItem( sheetKey, JSON.stringify( { data: { results: sheetData.date }, timestamp: "" } ) );
+        sessionStorage.setItem( sheetKey, JSON.stringify( { data: { results: sheetData.date }, timestamp: "" } ) );
 
         dataRequest.getItem( sheetKey, spy );
 
@@ -97,23 +97,23 @@
 
     suite( "deleteItem", function() {
       setup( function() {
-        localStorage.setItem( sheetKey, JSON.stringify( { data: { results: sheetData.values }, timestamp: "" } ) );
+        sessionStorage.setItem( sheetKey, JSON.stringify( { data: { results: sheetData.values }, timestamp: "" } ) );
       } );
 
       teardown( function() {
-        localStorage.removeItem( sheetKey );
+        sessionStorage.removeItem( sheetKey );
       } );
 
       test( "Should not delete data when no key provided", function() {
         dataRequest.deleteItem();
 
-        assert.isNotNull( localStorage.getItem( sheetKey ) );
+        assert.isNotNull( sessionStorage.getItem( sheetKey ) );
       } );
 
       test( "Should ensure data is removed", function() {
         dataRequest.deleteItem( sheetKey );
 
-        assert.isNull( localStorage.getItem( sheetKey ) );
+        assert.isNull( sessionStorage.getItem( sheetKey ) );
       } );
     } );
 
