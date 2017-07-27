@@ -43,22 +43,6 @@
 
     var BQ_TABLE_NAME = "component_data_events";
 
-    function supportsLocalStorage() {
-      try {
-        return "localStorage" in window && window.localStorage !== null;
-      } catch ( e ) {
-        return false;
-      }
-    }
-
-    function supportsSessionStorage() {
-      try {
-        return "sessionStorage" in window && window.sessionStorage !== null;
-      } catch ( e ) {
-        return false;
-      }
-    }
-
     Polymer( {
       is: "rise-data",
 
@@ -157,13 +141,13 @@
       _getCachedDataFromStorage: function( key, cb ) {
         var data = null;
 
-        if ( this._isLocalStorage() && supportsLocalStorage() ) {
+        if ( this._isLocalStorage() ) {
           try {
             data = JSON.parse( localStorage.getItem( key ), this._dateReviver );
           } catch ( e ) {
             console.warn( e ); // eslint-disable-line no-console
           }
-        } else if ( this._isSessionStorage() && supportsSessionStorage() ) {
+        } else if ( this._isSessionStorage() ) {
           try {
             data = JSON.parse( sessionStorage.getItem( key ), this._dateReviver );
           } catch ( e ) {
@@ -420,13 +404,13 @@
               this._save( key, data );
             }
           }
-          if ( this._isLocalStorage() && supportsLocalStorage() ) {
+          if ( this._isLocalStorage() ) {
             try {
               localStorage.setItem( key, JSON.stringify( data ) );
             } catch ( e ) {
               console.warn( e ); // eslint-disable-line no-console
             }
-          } else if ( this._isSessionStorage() && supportsSessionStorage() ) {
+          } else if ( this._isSessionStorage() ) {
             try {
               sessionStorage.setItem( key, JSON.stringify( data ) );
             } catch ( e ) {
@@ -491,13 +475,13 @@
             }
           }
 
-          if ( this._isLocalStorage() && supportsLocalStorage() ) {
+          if ( this._isLocalStorage() ) {
             try {
               localStorage.removeItem( key );
             } catch ( ex ) {
               console.warn( ex ); // eslint-disable-line no-console
             }
-          } else if ( this._isSessionStorage() && supportsSessionStorage() ) {
+          } else if ( this._isSessionStorage() ) {
             try {
               sessionStorage.removeItem( key );
             } catch ( ex ) {
