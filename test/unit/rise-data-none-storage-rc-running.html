@@ -12,10 +12,11 @@
 </head>
 <body>
 
-<rise-data id="request" storage-type="local"></rise-data>
+<rise-data id="request"></rise-data>
 
 <script src="../data/sheet.js"></script>
 <script src="../../node_modules/widget-tester/mocks/localStorage-mock.js"></script>
+<script src="../../node_modules/widget-tester/mocks/sessionStorage-mock.js"></script>
 
 <script>
   /* global sinon, suite, test, assert, suiteSetup, suiteTeardown, setup, teardown, sheetKey, sheetData */
@@ -32,7 +33,7 @@
     dataRequest._handlePingResponse( null, { response: { name: "rise-cache-v2", version: "0.0.0" } } );
   } );
 
-  suite( "localStorage when RC is running", function() {
+  suite( "sessionStorage when RC is running", function() {
     suiteSetup( function() {
       dataRequest.endpoint = "spreadsheets"
     } );
@@ -44,19 +45,16 @@
 
     suite( "RC running", function() {
 
-      teardown( function() {
-        window.localStorageError = false;
-        localStorage.removeItem( sheetKey );
-        localStorage.setItem.restore();
-      } );
+      test( "should not save to session or local storage even though it saves to RC", function() {
 
-      test( "should save to local storage even though it saves to RC", function() {
-
-        var localStorageSetItemStub = sinon.stub( localStorage, "setItem" );
+        var sessionStorageSetItemStub = sinon.stub( sessionStorage, "setItem" ),
+          localStorageSetItemStub = sinon.stub( localStorage, "setItem" );
 
         dataRequest.saveItem( sheetKey, { results: sheetData.values } );
 
-        assert( localStorageSetItemStub.called );
+        assert.isFalse( sessionStorageSetItemStub.called );
+        assert.isFalse( localStorageSetItemStub.called );
+
       } );
     } );
 
@@ -70,24 +68,33 @@
           dataRequest._handleCacheError( null, resp );
         } );
 
+        sessionStorage.setItem( sheetKey, JSON.stringify( { results: sheetData.values } ) );
         localStorage.setItem( sheetKey, JSON.stringify( { results: sheetData.values } ) );
       } );
 
       teardown( function() {
+        window.sessionStorageError = false;
+        sessionStorage.removeItem( sheetKey );
+
         window.localStorageError = false;
         localStorage.removeItem( sheetKey );
         dataRequest.$.cache.generateRequest.restore();
       } );
 
-      test( "should get data from local storage if it fails to get from RC", function() {
+      test( "should not get data from session or local storage if it fails to get from RC", function() {
 
-        var localStorageGetItemStub = sinon.stub( localStorage, "getItem", function() {
-          return JSON.stringify( { results: sheetData.values } );
-        } );
+        var sessionStorageGetItemStub = sinon.stub( sessionStorage, "getItem", function() {
+            return JSON.stringify( { results: sheetData.values } );
+          } ),
+          localStorageGetItemStub = sinon.stub( localStorage, "getItem", function() {
+            return JSON.stringify( { results: sheetData.values } );
+          } );
 
         dataRequest.getItem( sheetKey, function() {} );
 
-        assert( localStorageGetItemStub.called );
+        assert.isFalse( sessionStorageGetItemStub.called );
+        assert.isFalse( localStorageGetItemStub.called );
+
       } );
     } );
 
