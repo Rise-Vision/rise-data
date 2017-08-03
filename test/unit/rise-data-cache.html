@@ -59,11 +59,6 @@
         assert.equal( dataRequest._getCacheUrl( sheetKey, "GET" ), "https://localhost:9494/spreadsheets/" + sheetKey );
       } );
 
-      test( "should return correct URL when request method is PUT", function() {
-        dataRequest.$.cache.method = "PUT";
-        assert.equal( dataRequest._getCacheUrl( sheetKey, "PUT" ), "https://localhost:9494/spreadsheets/" + sheetKey );
-      } );
-
       test( "should return correct URL when request method is DELETE", function() {
         dataRequest.$.cache.method = "DELETE";
         assert.equal( dataRequest._getCacheUrl( sheetKey, "DELETE" ), "https://localhost:9494/spreadsheets/" + sheetKey );
@@ -91,15 +86,6 @@
         dataRequest.$.cache.method = "POST";
 
         assert.deepEqual( dataRequest._getCacheBody( sheetKey, sheetData.values, "POST" ), {
-          key: sheetKey,
-          value: sheetData.values
-        } );
-      } );
-
-      test( "should return body object value when request is a PUT", function() {
-        dataRequest.$.cache.method = "PUT";
-
-        assert.deepEqual( dataRequest._getCacheBody( sheetKey, sheetData.values, "PUT" ), {
           key: sheetKey,
           value: sheetData.values
         } );
@@ -405,11 +391,11 @@
         assert.equal( dataRequest.$.cache.method, "POST" );
       } );
 
-      test( "should set request method to 'PUT'", function() {
+      test( "should set request method to 'POST' when performing update operation", function() {
         dataRequest._keys = [ sheetKey ];
         dataRequest._save( sheetKey, { results: sheetData.values } );
 
-        assert.equal( dataRequest.$.cache.method, "PUT" );
+        assert.equal( dataRequest.$.cache.method, "POST" );
       } );
 
       test( "should generate request to Rise Cache", function() {
@@ -444,25 +430,6 @@
         dataRequest._isRiseCacheSchemeEnabled.restore();
       } );
 
-      test( "should use Fetch to PUT request to Rise Cache", function() {
-        var fetchStub = sinon.stub( dataRequest, "_fetch" );
-
-        sinon.stub( dataRequest, "_isRiseCacheSchemeEnabled", function() {
-          return true;
-        } );
-
-        dataRequest.endpoint = "spreadsheets";
-        dataRequest._keys = [ sheetKey ];
-        dataRequest._save( sheetKey, { results: sheetData.values } );
-
-        assert.equal( requestStub.callCount, 0 );
-
-        assert.equal( fetchStub.args[ 0 ][ 0 ], "PUT" );
-        assert.include( fetchStub.args[ 0 ][ 1 ], "/spreadsheets/risesheet_abc" );
-
-        dataRequest._fetch.restore();
-        dataRequest._isRiseCacheSchemeEnabled.restore();
-      } );
     } );
 
     suite( "saveItem", function() {
