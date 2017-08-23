@@ -257,7 +257,10 @@
         this._isCacheRunning = resp.response && resp.response !== "";
         this._pingReceived = true;
 
-        this.fire( "rise-data-ping-received", this._isCacheRunning );
+        this.fire( "rise-data-ping-received", {
+          isCacheRunning: this._isCacheRunning,
+          baseCacheUrl: this._baseCacheUrl
+        } );
       },
 
       _handlePingError: function() {
@@ -267,7 +270,10 @@
           this._isCacheRunning = false;
           this._pingReceived = true;
 
-          this.fire( "rise-data-ping-received", this._isCacheRunning );
+          this.fire( "rise-data-ping-received", {
+            isCacheRunning: this._isCacheRunning,
+            baseCacheUrl: this._baseCacheUrl
+          } );
 
         } else {
           this._retryPingHttp();
