@@ -67,7 +67,10 @@
 
       test( "should fire 'rise-data-ping-received'", function( done ) {
         var responseHandler = function( response ) {
-          assert.isTrue( response.detail );
+          assert.property( response.detail, "isCacheRunning" );
+          assert.isTrue( response.detail.isCacheRunning );
+          assert.property( response.detail, "baseCacheUrl" );
+          assert.equal( response.detail.baseCacheUrl, "http://localhost:9494" );
 
           dataRequest.removeEventListener( "rise-data-ping-received", responseHandler );
 
@@ -85,7 +88,8 @@
 
       test( "should fire 'rise-data-ping-received'", function( done ) {
         var responseHandler = function( response ) {
-          assert.isFalse( response.detail );
+          assert.property( response.detail, "isCacheRunning" );
+          assert.isFalse( response.detail.isCacheRunning );
 
           dataRequest.removeEventListener( "rise-data-ping-received", responseHandler );
 
