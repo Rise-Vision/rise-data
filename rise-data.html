@@ -32,7 +32,7 @@
 </dom-module>
 
 <!-- build:version -->
-<script>var dataVersion = "2.0.0";</script>
+<script>var dataVersion = "2.0.1";</script>
 <!-- endbuild -->
 
 <script>
@@ -461,6 +461,8 @@
           } else {
             if ( this.endpoint ) {
               this._get( key, cb );
+            } else {
+              this._getCachedDataFromStorage( key, cb );
             }
           }
 
