@@ -46,17 +46,21 @@
 
       teardown( function() {
         window.sessionStorageError = false;
+      } );
+
+      teardown( function() {
+        window.sessionStorageError = false;
         sessionStorage.removeItem( sheetKey );
-        sessionStorage.setItem.restore();
       } );
 
       test( "should save to session storage even though it saves to RC", function() {
-
-        var sessionStorageSetItemStub = sinon.stub( sessionStorage, "setItem" );
+        var value;
 
         dataRequest.saveItem( sheetKey, { results: sheetData.values } );
 
-        assert( sessionStorageSetItemStub.called );
+        value = sessionStorage.getItem( sheetKey );
+
+        assert.isString( value );
       } );
     } );
 
@@ -79,16 +83,34 @@
         dataRequest.$.cache.generateRequest.restore();
       } );
 
-      test( "should get data from session storage if it fails to get from RC", function() {
+      test( "should get data from session storage if it fails to get from RC", function( done ) {
+        var callback = function( data ) {
+          assert.deepEqual( data, { results: sheetData.values } );
 
-        var sessionStorageGetItemStub = sinon.stub( sessionStorage, "getItem", function() {
-          return JSON.stringify( { results: sheetData.values } );
-        } );
+          dataRequest.endpoint = "spreadsheets";
 
-        dataRequest.getItem( sheetKey, function() {} );
+          done();
+        };
 
-        assert( sessionStorageGetItemStub.called );
+        dataRequest.getItem( sheetKey, callback );
       } );
+
+      test( "should get data from session storage if no 'endpoint' value set", function( done ) {
+        var callback;
+
+        dataRequest.endpoint = "";
+
+        callback = function( data ) {
+          assert.deepEqual( data, { results: sheetData.values } );
+
+          dataRequest.endpoint = "spreadsheets";
+
+          done();
+        };
+
+        dataRequest.getItem( sheetKey, callback );
+      } );
+
     } );
 
 

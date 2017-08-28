@@ -88,6 +88,24 @@
         dataRequest.getItem( sheetKey, function() {} );
 
         assert( localStorageGetItemStub.called );
+
+        localStorageGetItemStub.restore();
+      } );
+
+      test( "should get data from local storage if no 'endpoint' value set", function() {
+
+        var localStorageGetItemStub = sinon.stub( localStorage, "getItem", function() {
+          return JSON.stringify( { results: sheetData.values } );
+        } );
+
+        dataRequest.endpoint = "";
+
+        dataRequest.getItem( sheetKey, function() {} );
+
+        assert( localStorageGetItemStub.called );
+
+        dataRequest.endpoint = "spreadsheets";
+        localStorageGetItemStub.restore();
       } );
     } );
 

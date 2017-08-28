@@ -55,6 +55,9 @@
         assert.isFalse( sessionStorageSetItemStub.called );
         assert.isFalse( localStorageSetItemStub.called );
 
+        sessionStorageSetItemStub.restore();
+        localStorageSetItemStub.restore();
+
       } );
     } );
 
@@ -94,6 +97,9 @@
 
         assert.isFalse( sessionStorageGetItemStub.called );
         assert.isFalse( localStorageGetItemStub.called );
+
+        sessionStorageGetItemStub.restore();
+        localStorageGetItemStub.restore();
 
       } );
     } );
