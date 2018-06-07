@@ -368,14 +368,28 @@
         }
       },
 
+      _startTests: function() {
+        // ensure to not execute code below if this integration test flag is not set
+        if ( !window.riseLoggerTests ) {
+          return;
+        }
+
+        this.ready( true );
+      },
+
       /**
        * Polymer has finished its initialization. This is the entry point.
        */
-      ready: function() {
+      ready: function( runningTests ) {
         var params = {
             event: "ready"
           },
           protocol = ( this._isRiseCacheSchemeEnabled() ) ? "rchttps://" : "https://";
+
+        // Necessary for integration tests so this function doesn't execute code below before stubs can be created
+        if ( window.riseLoggerTests && !runningTests ) {
+          return;
+        }
 
         // only include usage_type if it's a valid usage value
         if ( this._isValidUsage( this.usage ) ) {
