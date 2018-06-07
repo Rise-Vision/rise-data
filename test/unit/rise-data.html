@@ -7,6 +7,10 @@
 
   <script src="../../bower_components/webcomponentsjs/webcomponents.min.js"></script>
   <script src="../../bower_components/web-component-tester/browser.js"></script>
+  <script>
+    // global flag that rise-logger checks on ready handler for determining if running in an integration test
+    window.riseLoggerTests = true;
+  </script>
 
   <link rel="import" href="../../rise-data.html">
 </head>
@@ -18,9 +22,9 @@
 <script src="../../node_modules/widget-tester/mocks/localStorage-mock.js"></script>
 
 <script>
-  /* global sinon, suite, test, assert, setup, teardown */
+  /* global sinon, suite, suiteSetup, test, assert, setup, teardown */
 
-  var dataRequest = document.querySelector( "#request" );
+  var dataRequest = document.querySelector( "#request" ); // eslint-disable-line vars-on-top
 
   // mock logger getting display id and force handler of RC not running
   sinon.stub( dataRequest.$.logger.$.displayId, "generateRequest", function() {
@@ -33,6 +37,11 @@
   } );
 
   suite( "rise-data", function() {
+
+    suiteSetup( function() {
+      // required for integration test
+      dataRequest._startTests();
+    } );
 
     suite( "_isValidUsage", function() {
 
@@ -175,26 +184,23 @@
       } );
 
       test( "should log usage", function() {
-        dataRequest.ready();
+        dataRequest.ready( true );
         assert.equal( logStub.args[ 0 ][ 0 ], "component_data_events" );
         assert.include( JSON.stringify( logStub.args[ 0 ][ 1 ] ), "{\"event\":\"ready\",\"version\":" );
       } );
 
       test( "should log usage and include 'usage_type'", function() {
         dataRequest.usage = "widget";
-        dataRequest.ready();
+        dataRequest.ready( true );
         assert.equal( logStub.args[ 0 ][ 0 ], "component_data_events" );
         assert.include( JSON.stringify( logStub.args[ 0 ][ 1 ] ), "{\"event\":\"ready\",\"usage_type\":\"widget\",\"version\":" );
       } );
-    } );
-
-    suite( "attached", function() {
 
       test( "should set ping request url to use 'rchttps' scheme", function() {
         sinon.stub( dataRequest, "_isRiseCacheSchemeEnabled", function() {
           return true;
         } );
-        dataRequest.attached();
+        dataRequest.ready( true );
 
         assert.isTrue( dataRequest.$.ping.url.startsWith( "rchttps://" ) );
         dataRequest._isRiseCacheSchemeEnabled.restore();
@@ -204,12 +210,11 @@
         sinon.stub( dataRequest, "_isRiseCacheSchemeEnabled", function() {
           return false;
         } );
-        dataRequest.attached();
+        dataRequest.ready( true );
 
         assert.isTrue( dataRequest.$.ping.url.startsWith( "https://" ) );
         dataRequest._isRiseCacheSchemeEnabled.restore();
       } );
-
     } );
 
   } );

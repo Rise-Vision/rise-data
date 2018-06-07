@@ -7,6 +7,10 @@
 
   <script src="../../bower_components/webcomponentsjs/webcomponents.min.js"></script>
   <script src="../../bower_components/web-component-tester/browser.js"></script>
+  <script>
+    // global flag that rise-logger checks on ready handler for determining if running in an integration test
+    window.riseLoggerTests = true;
+  </script>
 
   <link rel="import" href="../../rise-data.html">
 </head>
@@ -18,9 +22,9 @@
 <script src="../../node_modules/widget-tester/mocks/sessionStorage-mock.js"></script>
 
 <script>
-  /* global sinon, suite, test, assert, setup, teardown, sheetKey, sheetData */
+  /* global sinon, suite, suiteSetup, test, assert, setup, teardown, sheetKey, sheetData */
 
-  var dataRequest = document.querySelector( "#request" );
+  var dataRequest = document.querySelector( "#request" ); // eslint-disable-line vars-on-top
 
   // mock logger getting display id and force handler RC not running
   sinon.stub( dataRequest.$.logger.$.displayId, "generateRequest", function() {
@@ -33,6 +37,11 @@
   } );
 
   suite( "sessionStorage", function() {
+
+    suiteSetup( function() {
+      // required for integration test
+      dataRequest._startTests();
+    } );
 
     suite( "saveItem", function() {
 
