@@ -32,7 +32,7 @@
 </dom-module>
 
 <!-- build:version -->
-<script>var dataVersion = "2.0.1";</script>
+<script>var dataVersion = "2.0.2";</script>
 <!-- endbuild -->
 
 <script>
@@ -369,22 +369,13 @@
       },
 
       /**
-       * An instance of the element was inserted into the DOM.
-       */
-      attached: function() {
-        var protocol = ( this._isRiseCacheSchemeEnabled() ) ? "rchttps://" : "https://";
-
-        this._baseCacheUrl = protocol + "localhost:9495";
-        this.$.ping.generateRequest();
-      },
-
-      /**
        * Polymer has finished its initialization. This is the entry point.
        */
       ready: function() {
         var params = {
-          event: "ready"
-        };
+            event: "ready"
+          },
+          protocol = ( this._isRiseCacheSchemeEnabled() ) ? "rchttps://" : "https://";
 
         // only include usage_type if it's a valid usage value
         if ( this._isValidUsage( this.usage ) ) {
@@ -392,6 +383,10 @@
         }
 
         params.version = dataVersion;
+
+        // ping rise cache
+        this._baseCacheUrl = protocol + "localhost:9495";
+        this.$.ping.generateRequest();
 
         // log usage
         this.$.logger.log( BQ_TABLE_NAME, params );
