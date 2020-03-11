@@ -139,9 +139,12 @@
       },
 
       _getCachedDataFromStorage: function( key, cb ) {
+        console.log( "5. getting from storage" ); // eslint-disable-line no-console
         var data = null;
 
         if ( this._isLocalStorage() ) {
+          console.log( "6. getting from local storage" ); // eslint-disable-line no-console
+
           try {
             data = JSON.parse( localStorage.getItem( key ), this._dateReviver );
           } catch ( e ) {
@@ -155,6 +158,7 @@
           }
         }
 
+        console.log( "7. calling callback" ); // eslint-disable-line no-console
         cb( data );
       },
 
@@ -177,7 +181,10 @@
       },
 
       _handleCacheError: function( e, resp ) {
+        console.log( "3. handle error" ); // eslint-disable-line no-console
+
         if ( this.$.cache.method === "GET" && this._callback && typeof this._callback === "function" ) {
+          console.log( "4. handle get error" ); // eslint-disable-line no-console
 
           // fallback to get data from local storage
           this._getCachedDataFromStorage( this._key, this._callback );
@@ -205,6 +212,8 @@
 
       _handleCacheResponse: function( e, resp ) {
         var data = null;
+
+        console.log( "3. handle response" ); // eslint-disable-line no-console
 
         if ( this._callback && typeof this._callback === "function" ) {
           if ( resp && resp.response ) {
@@ -327,6 +336,8 @@
 
       _get: function( key, cb ) {
         var method = "GET";
+
+        console.log( "2. internal get:" + key ); // eslint-disable-line no-console
 
         this._currentKey = key;
 
@@ -461,6 +472,8 @@
        * @param {Function} cb The callback to execute with provided data
        */
       getItem: function( key, cb ) {
+
+        console.log( "1. getting item:" + key ); // eslint-disable-line no-console
 
         if ( this._pingReceived && key && cb && typeof cb === "function" ) {
           if ( !this._isCacheRunning ) {
